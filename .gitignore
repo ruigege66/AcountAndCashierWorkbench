@@ -1,0 +1,17 @@
+# Python 缓存
+__pycache__/
+*.pyc
+*.pyo
+
+# 数据库与运行数据（财务数据不上云仓库）
+journal-pro/data/journal.db
+journal-pro/data/journal.db-*
+journal-pro/data/*.log
+journal-pro/data/report_*.png
+
+# 内置运行时与构建产物（体积大，随迁移包分发）
+journal-pro/runtime/
+*.zip
+
+# 工作区会话数据
+.workbuddy/

@@ -63,6 +63,18 @@ class SqliteLedger:
                  WHERE {where} GROUP BY j.subject_code,j.direction
                  ORDER BY j.direction,amount DESC""", args)]
 
+    def budgets(self, year):
+        return [dict(r) for r in self.conn.execute(
+            """SELECT b.subject_code, s.name AS subject_name, SUM(b.amount) AS budget
+               FROM budgets b LEFT JOIN subjects s ON s.code=b.subject_code
+               WHERE b.period LIKE ? GROUP BY b.subject_code ORDER BY budget DESC""", (year + "%",))]
+
+    def year_actuals(self, year):
+        return [dict(r) for r in self.conn.execute(
+            """SELECT l.subject_code, SUM(l.debit) AS actual FROM voucher_lines l
+               JOIN vouchers v ON v.id=l.voucher_id AND v.status='posted' AND v.period LIKE ?
+               GROUP BY l.subject_code""", (year + "%",))]
+
     def journal_month(self, period):
         return [dict(r) for r in self.conn.execute(
             """SELECT direction,SUM(amount) v FROM journal

@@ -182,9 +182,13 @@ def main():
     html = render_report(data, g)
     check("报告为完整 HTML", html.startswith("<!DOCTYPE html>") and len(html) > 10000,
           f"{len(html)} 字符")
-    check("含内联 SVG 图表", html.count("<svg") >= 5, f"{html.count('<svg')} 个图表")
+    check("含内联 SVG 图表", html.count("<svg") >= 8, f"{html.count('<svg')} 个图表")
     check("零外部依赖（可离线打开）", "cdn.jsdelivr" not in html and "http://" not in html.replace("http://127.0.0.1", ""))
-    check("含自动文字结论", "自动分析结论" in html and len(data["conclusions"]) >= 4,
+    fc = data["forecast"]
+    check("含预测数据（收入/净利/现金流）", len(fc["revenue"]) == 3 and len(fc["net"]) == 3 and len(fc["cash"]) == 6,
+          f"{len(fc['revenue'])}/{len(fc['net'])}/{len(fc['cash'])}")
+    check("含资金安全月数与回测字段", "months" in fc["safety_months"] and "backtest" in fc)
+    check("含管理层摘要与自动结论", "管理层摘要" in html and len(data["conclusions"]) >= 4,
           f"{len(data['conclusions'])} 条结论")
     check("含计算规则说明书与数据血缘", "计算规则说明书" in html and "数据血缘" in html)
     check("含功能联动关系图", "功能联动关系图" in html)

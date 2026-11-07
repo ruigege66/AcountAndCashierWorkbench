@@ -306,6 +306,113 @@ def capability_sections(ctx, data, op, quality):
     return [{"title": t, "paras": [p for p in paras[k] if p]} for k, t in titles]
 
 
+def _linreg(ys):
+    """最小二乘线性回归，返回 (slope, intercept, 残差标准差)"""
+    n = len(ys)
+    if n < 2:
+        return None
+    xs = list(range(n))
+    sx, sy = sum(xs), sum(ys)
+    sxx = sum(x * x for x in xs)
+    sxy = sum(x * y for x, y in zip(xs, ys))
+    den = n * sxx - sx * sx
+    if den == 0:
+        return None
+    slope = (n * sxy - sx * sy) / den
+    intercept = (sy - slope * sx) / n
+    resid = [y - (slope * x + intercept) for x, y in zip(xs, ys)]
+    sigma = (sum(r * r for r in resid) / (n - 2)) ** 0.5 if n > 2 else abs(sy / n) * 0.2
+    return slope, intercept, sigma
+
+
+def _forecast_series(rows, key, months=3, nonnegative=False):
+    """趋势预测：线性回归 60% + 近 3 月均值 40% 混合，置信区间 = ±1 倍残差标准差"""
+    vals = [float(r.get(key) or 0) for r in rows][-6:]
+    if not vals:
+        return []
+    fit = _linreg(vals)
+    avg = sum(vals[-3:]) / min(3, len(vals))
+    sigma = fit[2] if fit else abs(avg) * 0.3
+    preds = []
+    for i in range(1, months + 1):
+        base = (fit[0] * (len(vals) - 1 + i) + fit[1]) if fit else avg
+        mid = base * 0.6 + avg * 0.4
+        lo, hi = mid - sigma, mid + sigma
+        if nonnegative:
+            lo = max(lo, 0.0)
+        preds.append({"period": shift_month(rows[-1]["period"], i),
+                      "value": r2(mid), "low": r2(lo), "high": r2(hi)})
+    return preds
+
+
+def _budget_view(ctx, period):
+    """预算执行与全年推算（未设预算返回提示）"""
+    year = period[:4]
+    budgets = ctx.ledger.budgets(year)
+    if not budgets:
+        return {"has_budget": False,
+                "hint": f"{year} 年未设置预算；在「预算费控」按期间+科目设置后，此处将给出执行率与年末预测"}
+    actuals = {r["subject_code"]: r["actual"] for r in ctx.ledger.year_actuals(year)}
+    months_done = int(period[5:7])
+    months_left = max(12 - months_done, 0)
+    items = []
+    for b in budgets:
+        actual = r2(actuals.get(b["subject_code"], 0))
+        budget = r2(b["budget"])
+        run_rate = actual / months_done if months_done else 0
+        year_end = r2(actual + run_rate * months_left)
+        items.append({"subject": b["subject_name"] or b["subject_code"], "budget": budget,
+                      "actual": actual, "usage": round(actual / budget * 100, 1) if budget else None,
+                      "year_end_forecast": year_end,
+                      "status": "超支" if actual > budget else
+                                ("接近上限" if budget and actual / budget >= 0.8 else "正常")})
+    return {"has_budget": True, "year": year, "items": items,
+            "budget_total": r2(sum(x["budget"] for x in items)),
+            "actual_total": r2(sum(x["actual"] for x in items))}
+
+
+def build_forecast(conn, ctx, data):
+    """经营预测与展望：趋势预测、现金流推演、资金安全月数、预算推算、回测误差。"""
+    trend = data["trend"]
+    active = [r for r in trend if (r["revenue"] or 0) or (r["expense"] or 0)]
+    sparse = len(active) < 3
+    rev_fc = _forecast_series(trend, "revenue", 3, nonnegative=True)
+    net_fc = _forecast_series(trend, "net", 3)
+    # 现金流 6 个月推演：近 3 月月均净额 + 货币资金期初 + 安全线
+    opening = data["kpi"]["cash"]
+    floor = float(ctx.ledger.setting("risk_cash_floor", "2000") or 0)
+    nets = [float(r["net"] or 0) for r in trend][-3:]
+    avg_net = sum(nets) / max(len(nets), 1)
+    bal, cash_fc = opening, []
+    for i in range(1, 7):
+        bal += avg_net
+        cash_fc.append({"period": shift_month(data["period"], i),
+                        "net": r2(avg_net), "end_balance": r2(bal),
+                        "below_floor": bal < floor})
+    outflow_avg = sum(float(r["outflow"] or 0) for r in trend[-3:]) / max(len(trend[-3:]), 1)
+    safety = {"cash": data["kpi"]["cash"], "monthly_outflow": r2(outflow_avg),
+              "months": round(data["kpi"]["cash"] / outflow_avg, 1) if outflow_avg > 0.005 else None,
+              "floor": floor, "rule": "资金安全月数 = 期末货币资金 ÷ 近 3 月月均支出；低于 3 个月建议补充资金安排"}
+    # 回测：用除最后一个月外的历史预测最后一个月，与实际比较
+    backtest = None
+    if len(trend) >= 4 and abs(trend[-1]["revenue"] or 0) > 0.005:
+        sub = trend[:-1]
+        fc = _forecast_series(sub, "revenue", 1, nonnegative=True)
+        if fc:
+            pred, actual = fc[0]["value"], float(trend[-1]["revenue"] or 0)
+            backtest = {"month": trend[-1]["period"], "predicted": r2(pred), "actual": r2(actual),
+                        "error_pct": round((actual - pred) / abs(pred) * 100, 1) if abs(pred) > 0.005 else None}
+    return {"method": "线性回归（60%）与近 3 月移动平均（40%）加权混合，置信区间为 ±1 倍历史残差标准差；"
+                      "现金流推演基于近 3 月月均净额滚动累加",
+            "sparse": sparse, "sparse_hint": "历史有效数据不足 3 个月，预测结果仅供参考" if sparse else "",
+            "revenue": rev_fc, "net": net_fc, "cash": cash_fc,
+            "safety_months": safety, "budget": _budget_view(ctx, data["period"]),
+            "backtest": backtest,
+            "history": trend,
+            "limitation": "预测基于账套内历史数据外推，未考虑未入账合同、价格调整与宏观经济变化；"
+                          "账套历史越短，预测区间越宽，应结合业务判断使用"}
+
+
 def analyze(conn, period, rules=None):
     """一次调用产出全部分析数据，供在线报告 / 各页面 / 导出共用。"""
     rules = rules or RuleEngine(conn)
@@ -376,6 +483,7 @@ def analyze(conn, period, rules=None):
     data["conclusions"] = conclusions(ctx, data)
     data["rule_book"] = rule_book(conn, rules)["metrics"]
     data["report"] = build_report_pack(ctx, data)
+    data["forecast"] = build_forecast(conn, ctx, data)
     return data
 
 
