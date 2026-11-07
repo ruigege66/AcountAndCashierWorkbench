@@ -59,6 +59,7 @@ def start():
     c = assemble()
     for mod in ("features", "analytics_api",
                 "app.extensions.accounting", "app.extensions.cashier",
-                "app.extensions.audit", "app.extensions.security", "app.extensions.tax"):
+                "app.extensions.audit", "app.extensions.security", "app.extensions.tax",
+                "app.extensions.gateway"):
         importlib.import_module(mod)
     return c

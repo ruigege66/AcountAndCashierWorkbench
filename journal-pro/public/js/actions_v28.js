@@ -42,9 +42,10 @@ async function runV28(id) {
   }
   if (body.enabled !== undefined) body.enabled = body.enabled === true || body.enabled === 'true';
   const out = $('out_' + id);
+  const url = t.api + (qs.length ? '?' + qs.join('&') : '');
+  if (t.download) { window.open(url); toast('✓ 已生成下载文件（浏览器新窗口）'); return; }
   if (out) out.innerHTML = '<div class="muted">执行中…</div>';
   try {
-    const url = t.api + (qs.length ? '?' + qs.join('&') : '');
     const d = await api(url, method, method === 'GET' ? undefined : body);
     if (out) out.innerHTML = renderV28Result(d);
     toast('✓ ' + t.title + ' 执行成功');
