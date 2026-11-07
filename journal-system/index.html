@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>会计日记账系统</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --primary:#4472C4; --primary-dark:#2F5597; --primary-light:#D9E2F3;
+    --bg:#F4F6FA; --card:#FFFFFF; --border:#E3E8F0;
+    --text:#1F2937; --text-2:#6B7280;
+    --green:#2E8B57; --green-bg:#E6F4EC;
+    --red:#C0392B; --red-bg:#FDEBEA;
+    --orange:#ED7D31; --orange-bg:#FDF0E6;
+    --blue-bg:#EAF1FB;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px}
+  header{background:linear-gradient(135deg,var(--primary-dark),var(--primary));color:#fff;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+  header h1{font-size:18px;font-weight:600}
+  header .sub{font-size:12px;opacity:.85;margin-top:2px}
+  nav{display:flex;gap:4px;background:var(--card);border-bottom:1px solid var(--border);padding:0 16px;position:sticky;top:0;z-index:10}
+  nav button{border:none;background:none;padding:13px 18px;font-size:14px;color:var(--text-2);cursor:pointer;border-bottom:2px solid transparent;font-family:inherit}
+  nav button.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:600}
+  nav button:hover{color:var(--primary)}
+  main{max-width:1200px;margin:0 auto;padding:20px 16px 60px}
+  .view{display:none}.view.active{display:block}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin-bottom:16px}
+  .card h3{font-size:15px;margin-bottom:12px;color:var(--primary-dark)}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px}
+  .kpi{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+  .kpi .label{font-size:12px;color:var(--text-2)}
+  .kpi .value{font-size:22px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}
+  .kpi.cash .value{color:var(--primary-dark)} .kpi.bank .value{color:var(--green)}
+  form .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+  label{display:block;font-size:12px;color:var(--text-2);margin-bottom:4px}
+  input,select{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:14px;font-family:inherit;background:#fff;color:var(--text)}
+  input:focus,select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 2px var(--primary-light)}
+  .btn{display:inline-block;border:none;border-radius:6px;padding:9px 22px;font-size:14px;cursor:pointer;font-family:inherit;font-weight:500}
+  .btn-primary{background:var(--primary);color:#fff} .btn-primary:hover{background:var(--primary-dark)}
+  .btn-ghost{background:#fff;color:var(--primary);border:1px solid var(--primary)}
+  .btn-danger{background:var(--red-bg);color:var(--red)}
+  .btn-sm{padding:4px 10px;font-size:12px}
+  table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+  th{background:var(--blue-bg);color:var(--primary-dark);font-size:12px;padding:8px 10px;text-align:left;white-space:nowrap;position:sticky;top:0}
+  td{padding:7px 10px;border-bottom:1px solid var(--border);white-space:nowrap}
+  tr:hover td{background:#FAFBFE}
+  td.num{text-align:right;font-variant-numeric:tabular-nums}
+  .tag{display:inline-block;padding:2px 10px;border-radius:10px;font-size:12px}
+  .tag.unchecked{background:var(--orange-bg);color:var(--orange)}
+  .tag.checked{background:var(--green-bg);color:var(--green)}
+  .tag.adjusted{background:var(--blue-bg);color:var(--primary)}
+  .tag.ok{background:var(--green-bg);color:var(--green)} .tag.bad{background:var(--red-bg);color:var(--red)}
+  .amt-in{color:var(--primary-dark);font-weight:600} .amt-out{color:var(--orange);font-weight:600}
+  .filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:12px}
+  .charts2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:860px){.charts2{grid-template-columns:1fr}}
+  .chart-box{position:relative;height:300px}
+  .muted{color:var(--text-2);font-size:12px}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;opacity:0;transition:.3s;pointer-events:none;z-index:99}
+  .toast.show{opacity:.92}
+  .empty{text-align:center;color:var(--text-2);padding:30px 0}
+  .row-actions{display:flex;gap:6px}
+  .scroll-x{overflow-x:auto}
+  .list-manage{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+  .chip{background:var(--blue-bg);color:var(--primary-dark);border-radius:14px;padding:4px 12px;font-size:13px;display:inline-flex;align-items:center;gap:6px}
+  .chip button{border:none;background:none;color:var(--red);cursor:pointer;font-size:13px;padding:0}
+  .form-row{display:flex;gap:10px;align-items:flex-end;margin-top:10px}
+  .form-row > div{flex:1}
+  .stat-line{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--border)}
+  @media print{
+    header,nav,.filters,form,.row-actions,.btn,.toast,#entryKpis{display:none!important}
+    body{background:#fff}
+    .card{border:none;box-shadow:none;padding:0;margin-bottom:14px;page-break-inside:avoid}
+    main{max-width:none;padding:0}
+    th{position:static}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div><h1>📒 会计日记账系统</h1><div class="sub">日清月结 · 项目核算 · 数据本机保存</div></div>
+  <div class="sub" id="todayText"></div>
+</header>
+<nav>
+  <button data-view="entry" class="active">录入记账</button>
+  <button data-view="ledger">流水账</button>
+  <button data-view="daily">日结核对</button>
+  <button data-view="report">月度报表</button>
+  <button data-view="stats">统计看板</button>
+  <button data-view="settings">设置</button>
+</nav>
+<main>
+
+<!-- ============ 录入 ============ -->
+<section class="view active" id="view-entry">
+  <div class="kpis" id="entryKpis"></div>
+  <div class="card">
+    <h3 id="formTitle">新增凭证</h3>
+    <form id="entryForm">
+      <div class="grid">
+        <div><label>日期 *</label><input type="date" id="f-date" required></div>
+        <div><label>账户 *</label><select id="f-account"><option value="cash">库存现金</option><option value="bank">银行存款</option></select></div>
+        <div><label>凭证字号 *</label><input type="text" id="f-voucher" placeholder="如 现收001 / 银付002" required></div>
+        <div><label>摘要 *</label><input type="text" id="f-summary" placeholder="业务内容" required></div>
+        <div><label>对方科目 *</label><select id="f-subject"></select></div>
+        <div><label>项目</label><select id="f-project"></select></div>
+        <div><label>结算方式（银行）</label><select id="f-settle"><option value="">—</option><option>转账</option><option>现金支票</option><option>转账支票</option><option>网银</option><option>汇款</option><option>其他</option></select></div>
+        <div><label>收入（借方）</label><input type="number" id="f-income" step="0.01" min="0" placeholder="0.00"></div>
+        <div><label>支出（贷方）</label><input type="number" id="f-expense" step="0.01" min="0" placeholder="0.00"></div>
+      </div>
+      <div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <button type="submit" class="btn btn-primary" id="saveBtn">保存凭证</button>
+        <button type="button" class="btn btn-ghost" onclick="suggestVoucher()">自动编号</button>
+        <button type="button" class="btn btn-ghost" id="cancelEditBtn" style="display:none" onclick="cancelEdit()">取消编辑</button>
+        <span class="muted" id="entryHint">收入与支出只能填其一</span>
+      </div>
+    </form>
+  </div>
+  <div class="card"><h3>最近录入</h3><div class="scroll-x" id="recentTable"></div></div>
+</section>
+
+<!-- ============ 流水 ============ -->
+<section class="view" id="view-ledger">
+  <div class="card">
+    <h3>筛选</h3>
+    <div class="filters">
+      <div><label>账户</label><select id="q-account"><option value="">全部</option><option value="cash">库存现金</option><option value="bank">银行存款</option></select></div>
+      <div><label>项目</label><select id="q-project"></select></div>
+      <div><label>对方科目</label><select id="q-subject"></select></div>
+      <div><label>对账状态</label><select id="q-recon"><option value="">全部</option><option>未核对</option><option>已核对</option><option>已调节</option></select></div>
+      <div><label>日期从</label><input type="date" id="q-from"></div>
+      <div><label>日期至</label><input type="date" id="q-to"></div>
+      <div><label>关键词</label><input type="text" id="q-kw" placeholder="摘要/凭证号"></div>
+    </div>
+    <div class="scroll-x" id="ledgerTable"></div>
+    <div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <span class="muted" id="ledgerStat"></span>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost btn-sm" onclick="batchRecon()">✓ 筛选结果全部标记已核对</button>
+        <button class="btn btn-ghost btn-sm" onclick="exportCSV()">⬇ 导出 Excel(CSV)</button>
+      </div>
+    </div>
+    <div id="ledgerPager" style="margin-top:10px;text-align:center"></div>
+  </div>
+</section>
+
+<!-- ============ 日结 ============ -->
+<section class="view" id="view-daily">
+  <div class="card">
+    <h3>月份</h3>
+    <input type="month" id="dailyMonth" style="width:180px">
+  </div>
+  <div class="card"><h3>库存现金 · 日结（每日盘点后填"实际库存"核对）</h3><div class="scroll-x" id="dailyCash"></div></div>
+  <div class="card"><h3>银行存款 · 日结（填"对账单余额"核对）</h3><div class="scroll-x" id="dailyBank"></div></div>
+  <div class="card">
+    <h3>银行存款余额调节表</h3>
+    <p class="muted" style="margin-bottom:12px">企业账面余额取自银行存款日记账；银行对账单余额取自日结中最近一次填列的对账单余额。调节后双方余额应相等。</p>
+    <div class="scroll-x" id="reconTable"></div>
+  </div>
+</section>
+
+<!-- ============ 月度报表 ============ -->
+<section class="view" id="view-report">
+  <div class="kpis" id="reportKpis"></div>
+  <div class="card"><h3>各月收支汇总（现金 + 银行存款）</h3><div class="scroll-x" id="reportTable"></div></div>
+  <div class="charts2">
+    <div class="card"><h3>各月收入 / 支出对比</h3><div class="chart-box"><canvas id="chMonth"></canvas></div></div>
+    <div class="card"><h3>各月净流入</h3><div class="chart-box"><canvas id="chNet"></canvas></div></div>
+  </div>
+</section>
+
+<!-- ============ 统计 ============ -->
+<section class="view" id="view-stats">
+  <div class="kpis" id="statsKpis"></div>
+  <div class="charts2">
+    <div class="card"><h3>现金 vs 银行存款：收入与支出</h3><div class="chart-box"><canvas id="chAcc"></canvas></div></div>
+    <div class="card"><h3>支出构成（按对方科目）</h3><div class="chart-box"><canvas id="chSubject"></canvas></div></div>
+    <div class="card"><h3>按项目收支</h3><div class="chart-box"><canvas id="chProject"></canvas></div></div>
+    <div class="card"><h3>资金结余趋势（按日）</h3><div class="chart-box"><canvas id="chTrend"></canvas></div></div>
+  </div>
+</section>
+
+<!-- ============ 设置 ============ -->
+<section class="view" id="view-settings">
+  <div class="card">
+    <h3>期初余额</h3>
+    <div class="form-row" style="max-width:420px">
+      <div><label>库存现金期初</label><input type="number" id="s-cash" step="0.01"></div>
+      <div><label>银行存款期初</label><input type="number" id="s-bank" step="0.01"></div>
+      <div><button class="btn btn-primary" onclick="saveOpenings()">保存</button></div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>对方科目管理</h3>
+    <div class="list-manage" id="subjectChips"></div>
+    <div class="form-row" style="max-width:420px">
+      <div><input type="text" id="newSubject" placeholder="输入新科目名称"></div>
+      <div style="flex:0"><button class="btn btn-ghost" onclick="addSubject()">添加科目</button></div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>项目管理</h3>
+    <div class="list-manage" id="projectChips"></div>
+    <div class="form-row" style="max-width:420px">
+      <div><input type="text" id="newProject" placeholder="输入新项目名称"></div>
+      <div style="flex:0"><button class="btn btn-ghost" onclick="addProject()">添加项目</button></div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>数据管理</h3>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn-ghost" onclick="exportCSV(true)">⬇ 导出全部流水 CSV</button>
+      <button class="btn btn-ghost" onclick="backupJSON()">⬇ 备份(JSON)</button>
+      <label class="btn btn-ghost" style="margin:0">⬆ 恢复备份<input type="file" id="importFile" accept=".json" style="display:none" onchange="restoreJSON(this)"></label>
+      <label class="btn btn-ghost" style="margin:0">⬆ 导入CSV流水<input type="file" id="csvFile" accept=".csv" style="display:none" onchange="importCSV(this)"></label>
+      <button class="btn btn-ghost" onclick="window.print()">🖨 打印当前页</button>
+      <button class="btn btn-danger" onclick="clearAll()">清空全部数据</button>
+    </div>
+    <p class="muted" style="margin-top:10px">数据保存在本机浏览器中，请定期「备份」或导出 CSV 防止丢失；换电脑时可用「恢复备份」迁移。</p>
+  </div>
+</section>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================= 数据层 ================= */
+const LS_KEY = 'journal_system_v1';
+const DEFAULT_SUBJECTS = ['库存现金','银行存款','应收账款','预付账款','其他应收款','应付账款','预收账款','合同负债','应交税费','管理费用','销售费用','财务费用','主营业务收入','其他业务收入','营业外支出','实收资本'];
+const DEFAULT_PROJECTS = ['日常运营','项目A','项目B','项目C'];
+const RECON = ['未核对','已核对','已调节'];
+function uid(){ try{ return crypto.randomUUID(); }catch(e){ return 'id-'+Date.now()+'-'+Math.random().toString(36).slice(2,9); } }
+
+let state = load();
+function load(){
+  try{
+    const s = JSON.parse(localStorage.getItem(LS_KEY));
+    if(s && s.entries) return s;
+  }catch(e){}
+  return {
+    entries: seedEntries(), subjects: [...DEFAULT_SUBJECTS], projects: [...DEFAULT_PROJECTS],
+    openings: {cash:5000, bank:86000}, counts: {cash:{}, bank:{}},
+    recon: {bankIn:0, bankOut:0, compIn:0, compOut:0}
+  };
+}
+function seedEntries(){
+  const mk=(d,a,v,su,p,sj,se,i,e)=>({id:uid(),date:d,account:a,voucher:v,summary:su,subject:p,project:sj,settle:se,income:i||0,expense:e||0,recon:'未核对'});
+  return [
+    mk('2026-11-01','cash','现收001','从银行提取备用金','银行存款','日常运营','',3000,0),
+    mk('2026-11-02','cash','现付001','支付办公用品采购款','管理费用','日常运营','',0,350),
+    mk('2026-11-03','cash','现付002','支付市内交通费','管理费用','日常运营','',0,120.5),
+    mk('2026-11-04','cash','现收002','收回员工备用金','其他应收款','日常运营','',800,0),
+    mk('2026-11-05','cash','现付003','支付快递费','销售费用','日常运营','',0,65),
+    mk('2026-11-01','bank','银收001','收到A客户货款','应收账款','项目A','网银',25000,0),
+    mk('2026-11-02','bank','银付001','支付供应商货款','应付账款','项目B','转账',0,18000),
+    mk('2026-11-03','bank','银付002','缴纳上月税费','应交税费','日常运营','网银',0,5600),
+    mk('2026-11-04','bank','银收002','收到B客户预付款','合同负债','项目C','转账',12000,0),
+    mk('2026-11-05','bank','银付003','支付银行手续费','财务费用','日常运营','网银',0,85.5),
+  ];
+}
+function save(){ localStorage.setItem(LS_KEY, JSON.stringify(state)); balCache={}; }
+/* 余额计算缓存：数据变动时统一失效 */
+let balCache={};
+function buildBal(account){
+  if(balCache[account]) return balCache[account];
+  const rows = state.entries.filter(x=>x.account===account)
+    .sort((a,b)=> a.date===b.date ? (a.seq||0)-(b.seq||0) : (a.date<b.date?-1:1));
+  let bal = state.openings[account]||0;
+  const m = new Map();
+  rows.forEach(r=>{ bal += (+r.income||0)-(+r.expense||0); m.set(r.id, bal); });
+  return balCache[account]=m;
+}
+function fmt(n){ return (Number(n)||0).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function toast(msg, onUndo){
+  const t=document.getElementById('toast');
+  t.textContent = onUndo? msg+'（点击撤销）' : msg;
+  t.style.pointerEvents = onUndo?'auto':'none';
+  t.style.cursor = onUndo?'pointer':'default';
+  t.onclick = onUndo? ()=>{ onUndo(); hideToast(); } : null;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer=setTimeout(hideToast, onUndo?5000:2200);
+}
+function hideToast(){ const t=document.getElementById('toast'); t.classList.remove('show'); t.onclick=null; t.style.pointerEvents='none'; }
+const fmtDate = d => d; // 存储即 YYYY-MM-DD
+
+/* 计算某个账户、截至某日的余额序列 */
+function accountSeries(account, upto='9999-12-31'){
+  const rows = state.entries.filter(e=>e.account===account && e.date<=upto)
+    .sort((a,b)=> a.date===b.date ? a.seq-b.seq : (a.date<b.date?-1:1));
+  let bal = state.openings[account]||0;
+  const byDate = {};
+  rows.forEach(e=>{
+    bal += (e.income||0) - (e.expense||0);
+    byDate[e.date] = bal;
+  });
+  return {rows, byDate, closing: bal};
+}
+function totals(account){
+  const rows = state.entries.filter(e=>!account || e.account===account);
+  return {
+    income: rows.reduce((s,e)=>s+(+e.income||0),0),
+    expense: rows.reduce((s,e)=>s+(+e.expense||0),0)
+  };
+}
+
+/* ================= 导航 ================= */
+document.querySelectorAll('nav button').forEach(b=>{
+  b.onclick = ()=>{
+    document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    document.getElementById('view-'+b.dataset.view).classList.add('active');
+    renderAll();
+  };
+});
+
+/* ================= 录入 ================= */
+function fillSelect(sel, arr, firstBlank){
+  sel.innerHTML = (firstBlank?`<option value="">—</option>`:'') + arr.map(x=>`<option>${x}</option>`).join('');
+}
+function renderEntry(){
+  const c=accountSeries('cash'), b=accountSeries('bank');
+  document.getElementById('entryKpis').innerHTML = `
+    <div class="kpi cash"><div class="label">现金账面余额</div><div class="value">¥ ${fmt(c.closing)}</div></div>
+    <div class="kpi bank"><div class="label">银行账面余额</div><div class="value">¥ ${fmt(b.closing)}</div></div>
+    <div class="kpi"><div class="label">本月收入合计</div><div class="value" style="color:var(--primary)">¥ ${fmt(totals().income)}</div></div>
+    <div class="kpi"><div class="label">本月支出合计</div><div class="value" style="color:var(--orange)">¥ ${fmt(totals().expense)}</div></div>
+    <div class="kpi"><div class="label">凭证总笔数</div><div class="value">${state.entries.length}</div></div>`;
+  fillSelect(document.getElementById('f-subject'), state.subjects);
+  fillSelect(document.getElementById('f-project'), ['','...'].slice(0,0).concat(state.projects));
+  document.getElementById('f-project').insertAdjacentHTML('afterbegin','<option value="">—不归属项目—</option>');
+  const recent=[...state.entries].sort((a,b)=>(b.date+b.id).localeCompare(a.date+a.id)).slice(0,8);
+  document.getElementById('recentTable').innerHTML = recent.length? tableHTML(recent, false) : '<div class="empty">暂无记录</div>';
+}
+let editingId = null;
+document.getElementById('entryForm').onsubmit = e=>{
+  e.preventDefault();
+  const income=+document.getElementById('f-income').value||0;
+  const expense=+document.getElementById('f-expense').value||0;
+  if(income>0 && expense>0) return toast('⚠ 一张凭证只能记收入或支出一方');
+  if(income===0 && expense===0) return toast('⚠ 请填写收入或支出金额');
+  const acc=document.getElementById('f-account').value;
+  if(acc==='bank' && !document.getElementById('f-settle').value) return toast('⚠ 银行凭证请选择结算方式');
+  const data = {
+    date: document.getElementById('f-date').value,
+    account: acc,
+    voucher: document.getElementById('f-voucher').value.trim(),
+    summary: document.getElementById('f-summary').value.trim(),
+    subject: document.getElementById('f-subject').value,
+    project: document.getElementById('f-project').value,
+    settle: acc==='bank'? document.getElementById('f-settle').value : '',
+    income, expense
+  };
+  if(editingId){
+    const dup = state.entries.find(x=>x.id!==editingId && x.account===acc && x.voucher && x.voucher===data.voucher);
+    if(dup && !confirm(`凭证字号「${data.voucher}」在该账户下已存在，仍要保存吗？`)) return;
+    const old = state.entries.find(x=>x.id===editingId);
+    if(old) Object.assign(old, data);
+    toast('✓ 凭证已更新');
+    cancelEdit();
+  }else{
+    const dup = state.entries.find(x=>x.account===acc && x.voucher && x.voucher===data.voucher);
+    if(dup && !confirm(`凭证字号「${data.voucher}」在该账户下已存在，仍要保存吗？`)) return;
+    const seq = state.entries.length? Math.max(...state.entries.map(x=>x.seq||0))+1 : 1;
+    state.entries.push({ id: uid(), seq, ...data, recon:'未核对' });
+    /* 连续录入：保留日期、账户、项目、科目，只清摘要/金额/凭证号 */
+    e.target.reset();
+    document.getElementById('f-date').value = data.date;
+    document.getElementById('f-account').value = acc;
+    document.getElementById('f-project').value = data.project;
+    document.getElementById('f-subject').value = data.subject;
+    toast('✓ 已保存，可连续录入');
+  }
+  save(); renderAll();
+};
+/* 收入/支出互斥：填了一方自动清空另一方 */
+document.getElementById('f-income').addEventListener('input', function(){ if(+this.value>0) document.getElementById('f-expense').value=''; });
+document.getElementById('f-expense').addEventListener('input', function(){ if(+this.value>0) document.getElementById('f-income').value=''; });
+
+/* 凭证编辑 */
+function startEdit(id){
+  const e2 = state.entries.find(x=>x.id===id); if(!e2) return;
+  editingId = id;
+  document.getElementById('f-date').value=e2.date;
+  document.getElementById('f-account').value=e2.account;
+  document.getElementById('f-voucher').value=e2.voucher;
+  document.getElementById('f-summary').value=e2.summary;
+  document.getElementById('f-subject').value=e2.subject;
+  document.getElementById('f-project').value=e2.project||'';
+  document.getElementById('f-settle').value=e2.settle||'';
+  document.getElementById('f-income').value=e2.income||'';
+  document.getElementById('f-expense').value=e2.expense||'';
+  document.getElementById('formTitle').textContent='编辑凭证';
+  document.getElementById('saveBtn').textContent='更新凭证';
+  document.getElementById('cancelEditBtn').style.display='inline-block';
+  document.querySelector('nav button[data-view="entry"]').click();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function cancelEdit(){
+  editingId=null;
+  document.getElementById('formTitle').textContent='新增凭证';
+  document.getElementById('saveBtn').textContent='保存凭证';
+  document.getElementById('cancelEditBtn').style.display='none';
+  document.getElementById('entryForm').reset();
+  document.getElementById('f-date').value=new Date().toISOString().slice(0,10);
+}
+/* 自动凭证编号：现收/现付/银收/银付 + 当月已用序号 + 1 */
+function suggestVoucher(){
+  const acc=document.getElementById('f-account').value;
+  const income=+document.getElementById('f-income').value||0;
+  const expense=+document.getElementById('f-expense').value||0;
+  if(income>0&&expense>0) return toast('⚠ 先填好金额再自动编号');
+  const prefix = acc==='cash' ? (income>0?'现收':'现付') : (income>0?'银收':'银付');
+  const month = (document.getElementById('f-date').value||'').slice(0,7);
+  let maxNo=0;
+  state.entries.forEach(x=>{
+    if(x.voucher && x.voucher.startsWith(prefix) && (!month || (x.date||'').slice(0,7)===month)){
+      const n=parseInt(x.voucher.replace(prefix,''),10); if(!isNaN(n)&&n>maxNo) maxNo=n;
+    }
+  });
+  document.getElementById('f-voucher').value = `${prefix}${String(maxNo+1).padStart(3,'0')}`;
+  toast('已生成：'+prefix+String(maxNo+1).padStart(3,'0'));
+}
+
+/* ================= 表格渲染 ================= */
+function reconTag(r){ const cls=r==='已核对'?'checked':(r==='已调节'?'adjusted':'unchecked'); return `<span class="tag ${cls}">${r}</span>`; }
+function tableHTML(rows, showActions){
+  return `<table><thead><tr>
+    <th>日期</th><th>账户</th><th>凭证字号</th><th>摘要</th><th>对方科目</th><th>项目</th><th>结算方式</th>
+    <th style="text-align:right">收入（借方）</th><th style="text-align:right">支出（贷方）</th><th style="text-align:right">结余</th><th>对账</th>${showActions?'<th>操作</th>':''}
+  </tr></thead><tbody>${
+    rows.map(e=>{
+      return `<tr>
+        <td>${e.date}</td>
+        <td>${e.account==='cash'?'现金':'银行'}</td>
+        <td>${e.voucher}</td><td>${e.summary}</td><td>${e.subject}</td><td>${e.project||'—'}</td><td>${e.settle||'—'}</td>
+        <td class="num amt-in">${e.income?fmt(e.income):''}</td>
+        <td class="num amt-out">${e.expense?fmt(e.expense):''}</td>
+        <td class="num">${fmt(runningBalance(e))}</td>
+        <td>${showActions? `<select onchange="setRecon('${e.id}',this.value)" style="padding:3px 6px">${RECON.map(r=>`<option ${r===e.recon?'selected':''}>${r}</option>`).join('')}</select>` : reconTag(e.recon)}</td>
+        ${showActions?`<td><div class="row-actions"><button class="btn btn-ghost btn-sm" onclick="startEdit('${e.id}')">编辑</button><button class="btn btn-danger btn-sm" onclick="delEntry('${e.id}')">删除</button></div></td>`:''}
+      </tr>`;
+    }).join('')}</tbody></table>`;
+}
+function runningBalance(e){ return buildBal(e.account).get(e.id) || 0; }
+function setRecon(id,v){ const e=state.entries.find(x=>x.id===id); if(e){e.recon=v; save(); renderLedger(); toast('已更新对账状态');} }
+let lastDeleted=null;
+function delEntry(id){
+  if(!confirm('删除这条凭证？删除后余额将自动重算。')) return;
+  const idx = state.entries.findIndex(x=>x.id===id);
+  if(idx<0) return;
+  const [removed] = state.entries.splice(idx,1);
+  lastDeleted = {entry:removed, idx};
+  save(); renderAll();
+  toast('已删除 1 条凭证', ()=>{ if(!lastDeleted) return; state.entries.splice(lastDeleted.idx,0,lastDeleted.entry); lastDeleted=null; save(); renderAll(); toast('✓ 已撤销删除'); });
+}
+
+/* ================= 流水 ================= */
+let ledgerPage = 0;
+const PAGE_SIZE = 100;
+function filtered(){
+  const acc=document.getElementById('q-account').value;
+  const proj=document.getElementById('q-project').value;
+  const sub=document.getElementById('q-subject').value;
+  const rec=document.getElementById('q-recon').value;
+  const from=document.getElementById('q-from').value;
+  const to=document.getElementById('q-to').value;
+  const kw=document.getElementById('q-kw').value.trim();
+  return state.entries.filter(e=>
+    (!acc||e.account===acc)&&(!proj||e.project===proj)&&(!sub||e.subject===sub)&&
+    (!rec||e.recon===rec)&&(!from||e.date>=from)&&(!to||e.date<=to)&&
+    (!kw|| (e.summary+e.voucher).includes(kw))
+  ).sort((a,b)=>(a.date+(a.seq||0)).localeCompare(b.date+(b.seq||0)));
+}
+function renderLedger(){
+  fillSelect(document.getElementById('q-project'), state.projects);
+  document.getElementById('q-project').insertAdjacentHTML('afterbegin','<option value="">全部</option>');
+  fillSelect(document.getElementById('q-subject'), state.subjects);
+  document.getElementById('q-subject').insertAdjacentHTML('afterbegin','<option value="">全部</option>');
+  const rows=filtered();
+  const pages=Math.max(1, Math.ceil(rows.length/PAGE_SIZE));
+  if(ledgerPage>=pages) ledgerPage=pages-1;
+  const paged=rows.slice(ledgerPage*PAGE_SIZE, ledgerPage*PAGE_SIZE+PAGE_SIZE);
+  const ti=rows.reduce((s,e)=>s+(+e.income||0),0), to=rows.reduce((s,e)=>s+(+e.expense||0),0);
+  const unchecked=rows.filter(e=>e.recon==='未核对').length;
+  document.getElementById('ledgerTable').innerHTML = paged.length? tableHTML(paged,true) : '<div class="empty">没有符合条件的记录</div>';
+  document.getElementById('ledgerStat').textContent = `共 ${rows.length} 笔 · 收入 ¥${fmt(ti)} · 支出 ¥${fmt(to)} · 净流入 ¥${fmt(ti-to)} · 未核对 ${unchecked} 笔`;
+  document.getElementById('ledgerPager').innerHTML = pages>1?
+    `<button class="btn btn-ghost btn-sm" onclick="ledgerGo(-1)" ${ledgerPage===0?'disabled':''}>上一页</button>
+     <span class="muted" style="margin:0 10px">第 ${ledgerPage+1} / ${pages} 页</span>
+     <button class="btn btn-ghost btn-sm" onclick="ledgerGo(1)" ${ledgerPage===pages-1?'disabled':''}>下一页</button>`:'';
+}
+function ledgerGo(d){ ledgerPage+=d; renderLedger(); window.scrollTo({top:0,behavior:'smooth'}); }
+function batchRecon(){
+  const rows=filtered().filter(e=>e.recon!=='已核对');
+  if(!rows.length) return toast('筛选结果中没有待核对的记录');
+  if(!confirm(`将筛选结果中 ${rows.length} 笔「未核对/已调节」记录全部标记为「已核对」？`)) return;
+  rows.forEach(e=>e.recon='已核对');
+  save(); renderLedger(); toast(`✓ 已核对 ${rows.length} 笔`);
+}
+['q-account','q-project','q-subject','q-recon','q-from','q-to'].forEach(id=>{
+  document.getElementById(id).addEventListener('change', ()=>{ ledgerPage=0; renderLedger(); });
+});
+document.getElementById('q-kw').addEventListener('input', ()=>{ ledgerPage=0; renderLedger(); });
+
+/* ================= 日结 ================= */
+function dailyTable(account, opening, countedKey){
+  const month=document.getElementById('dailyMonth').value || new Date().toISOString().slice(0,7);
+  const [y,m]=month.split('-').map(Number);
+  const days=new Date(y,m,0).getDate();
+  const ser=accountSeries(account);
+  let bal=opening, html=`<table><thead><tr><th>日期</th><th style="text-align:right">本日收入</th><th style="text-align:right">本日支出</th><th style="text-align:right">本日结出余额</th><th style="text-align:right">${account==='cash'?'实际库存现金（盘点填列）':'银行对账单余额（填列）'}</th><th style="text-align:right">差异</th><th>核对状态</th></tr></thead><tbody>`;
+  for(let d=1; d<=days; d++){
+    const ds=`${month}-${String(d).padStart(2,'0')}`;
+    const dayRows=state.entries.filter(e=>e.account===account&&e.date===ds);
+    const inc=dayRows.reduce((s,e)=>s+(+e.income||0),0), exp=dayRows.reduce((s,e)=>s+(+e.expense||0),0);
+    bal += inc-exp;
+    if(inc===0&&exp===0&&!state.counts[account]?.[ds]) continue;
+    const counted=(state.counts[account]||{})[ds]??'';
+    const diff=counted===''?'':Math.round((counted-bal)*100)/100;
+    const status=counted===''?`<span class="muted">待盘点</span>`:(diff===0?'<span class="tag ok">✓ 一致</span>':`<span class="tag bad">✗ 请核查</span>`);
+    html+=`<tr><td>${ds}</td><td class="num amt-in">${inc?fmt(inc):''}</td><td class="num amt-out">${exp?fmt(exp):''}</td><td class="num"><b>${fmt(bal)}</b></td>
+      <td class="num"><input type="number" step="0.01" style="width:130px;text-align:right" value="${counted}" onchange="setCount('${account}','${ds}',this.value)"></td>
+      <td class="num" style="color:${diff===0?'var(--green)':(diff===''?'inherit':'var(--red)')}">${diff===''?'—':fmt(diff)}</td><td>${status}</td></tr>`;
+  }
+  const rows=state.entries.filter(e=>e.account===account&&e.date.startsWith(month));
+  html+=`</tbody><tfoot><tr style="font-weight:700;background:var(--blue-bg)"><td>本月合计</td>
+    <td class="num">${fmt(rows.reduce((s,e)=>s+(+e.income||0),0))}</td>
+    <td class="num">${fmt(rows.reduce((s,e)=>s+(+e.expense||0),0))}</td>
+    <td class="num">${fmt(bal)}</td><td colspan="3"></td></tr></tfoot></table>`;
+  return html;
+}
+function setCount(account,ds,v){
+  state.counts[account]=state.counts[account]||{};
+  if(v==='') delete state.counts[account][ds]; else state.counts[account][ds]=+v;
+  save(); renderDaily();
+}
+function renderDaily(){
+  document.getElementById('dailyCash').innerHTML=dailyTable('cash', state.openings.cash);
+  document.getElementById('dailyBank').innerHTML=dailyTable('bank', state.openings.bank);
+}
+document.getElementById('dailyMonth').addEventListener('change', renderDaily);
+
+/* ================= 余额调节表 ================= */
+function renderRecon(){
+  const r = state.recon || (state.recon={bankIn:0,bankOut:0,compIn:0,compOut:0});
+  const bookBal = accountSeries('bank').closing;                       // 企业账面余额
+  const cnts = state.counts.bank || {};
+  const dates = Object.keys(cnts).sort();
+  const stmtBal = dates.length? cnts[dates[dates.length-1]] : null;     // 最近对账单余额
+  const adjBook = bookBal + (+r.bankIn||0) - (+r.bankOut||0);
+  const adjStmt = (stmtBal??0) + (+r.compIn||0) - (+r.compOut||0);
+  const ok = stmtBal!==null && Math.round((adjBook-adjStmt)*100)===0;
+  const inp = (k,v)=>`<input type="number" step="0.01" style="width:130px;text-align:right" value="${v||''}" onchange="setAdj('${k}',this.value)">`;
+  document.getElementById('reconTable').innerHTML = `<table>
+    <thead><tr><th>项目</th><th style="text-align:right">金额</th><th>说明</th></tr></thead><tbody>
+    <tr><td>企业银行存款日记账余额</td><td class="num"><b>${fmt(bookBal)}</b></td><td class="muted">自动取自日记账期末余额</td></tr>
+    <tr><td>加：银行已收、企业未收</td><td class="num">${inp('bankIn',r.bankIn)}</td><td class="muted">如银行代收货款企业未入账</td></tr>
+    <tr><td>减：银行已付、企业未付</td><td class="num">${inp('bankOut',r.bankOut)}</td><td class="muted">如银行代扣费用企业未入账</td></tr>
+    <tr style="background:var(--blue-bg);font-weight:700"><td>调节后余额（企业口径）</td><td class="num">${fmt(adjBook)}</td><td></td></tr>
+    <tr><td>银行对账单余额</td><td class="num"><b>${stmtBal===null?'未填列':fmt(stmtBal)}</b></td><td class="muted">取自日结核对最近一次填列</td></tr>
+    <tr><td>加：企业已收、银行未收</td><td class="num">${inp('compIn',r.compIn)}</td><td class="muted">如在途收款</td></tr>
+    <tr><td>减：企业已付、银行未付</td><td class="num">${inp('compOut',r.compOut)}</td><td class="muted">如未兑付支票</td></tr>
+    <tr style="background:var(--blue-bg);font-weight:700"><td>调节后余额（银行口径）</td><td class="num">${stmtBal===null?'—':fmt(adjStmt)}</td><td></td></tr>
+    </tbody></table>
+    <div style="margin-top:10px">${stmtBal===null
+      ? '<span class="tag unchecked">请先在上方日结表填列银行对账单余额</span>'
+      : (ok? '<span class="tag ok">✓ 调节相符</span>' : `<span class="tag bad">✗ 调节后差额 ${fmt(adjBook-adjStmt)}，请核查未达账项</span>`)}</div>`;
+}
+function setAdj(k,v){ state.recon[k] = v===''?0:+v; save(); renderRecon(); }
+
+/* ================= 月度报表 ================= */
+function monthList(){
+  return [...new Set(state.entries.map(e=>(e.date||'').slice(0,7)))].filter(Boolean).sort();
+}
+function renderReport(){
+  const months = monthList();
+  let cashBal = state.openings.cash||0, bankBal = state.openings.bank||0;
+  const ti=totals().income, to=totals().expense;
+  document.getElementById('reportKpis').innerHTML = `
+    <div class="kpi"><div class="label">已记账月份</div><div class="value">${months.length}</div></div>
+    <div class="kpi"><div class="label">累计收入</div><div class="value" style="color:var(--primary)">¥ ${fmt(ti)}</div></div>
+    <div class="kpi"><div class="label">累计支出</div><div class="value" style="color:var(--orange)">¥ ${fmt(to)}</div></div>
+    <div class="kpi"><div class="label">累计净流入</div><div class="value" style="color:${ti-to>=0?'var(--green)':'var(--red)'}">¥ ${fmt(ti-to)}</div></div>`;
+  if(!months.length){
+    document.getElementById('reportTable').innerHTML='<div class="empty">暂无数据</div>';
+  }else{
+    let rows='';
+    months.forEach(m=>{
+      const es=state.entries.filter(e=>(e.date||'').startsWith(m));
+      const ci=es.filter(e=>e.account==='cash').reduce((s,e)=>s+(+e.income||0),0);
+      const co=es.filter(e=>e.account==='cash').reduce((s,e)=>s+(+e.expense||0),0);
+      const bi=es.filter(e=>e.account==='bank').reduce((s,e)=>s+(+e.income||0),0);
+      const bo=es.filter(e=>e.account==='bank').reduce((s,e)=>s+(+e.expense||0),0);
+      cashBal+=ci-co; bankBal+=bi-bo;
+      const inc=ci+bi, exp=co+bo;
+      rows+=`<tr><td><b>${m}</b></td><td class="num amt-in">${fmt(ci)}</td><td class="num amt-out">${fmt(co)}</td>
+        <td class="num amt-in">${fmt(bi)}</td><td class="num amt-out">${fmt(bo)}</td>
+        <td class="num amt-in">${fmt(inc)}</td><td class="num amt-out">${fmt(exp)}</td>
+        <td class="num" style="color:${inc-exp>=0?'var(--green)':'var(--red)'};font-weight:600">${fmt(inc-exp)}</td>
+        <td class="num"><b>${fmt(cashBal)}</b></td><td class="num"><b>${fmt(bankBal)}</b></td></tr>`;
+    });
+    document.getElementById('reportTable').innerHTML=`<table><thead><tr>
+      <th>月份</th><th style="text-align:right">现金收入</th><th style="text-align:right">现金支出</th>
+      <th style="text-align:right">银行收入</th><th style="text-align:right">银行支出</th>
+      <th style="text-align:right">收入合计</th><th style="text-align:right">支出合计</th><th style="text-align:right">净流入</th>
+      <th style="text-align:right">现金期末</th><th style="text-align:right">银行期末</th></tr></thead><tbody>${rows}</tbody></table>`;
+    if(charts.length){ /* 月度图表在统计图表渲染时统一管理，这里单独绘制 */ }
+    charts.filter(c=>c.__month).forEach(c=>c.destroy());
+    charts=charts.filter(c=>!c.__month);
+    const c1=new Chart(document.getElementById('chMonth'),{type:'bar',
+      data:{labels:months,datasets:[
+        {label:'收入',data:months.map(m=>{const es=state.entries.filter(e=>(e.date||'').startsWith(m));return es.reduce((s,e)=>s+(+e.income||0),0)}),backgroundColor:'#4472C4',borderRadius:6},
+        {label:'支出',data:months.map(m=>{const es=state.entries.filter(e=>(e.date||'').startsWith(m));return es.reduce((s,e)=>s+(+e.expense||0),0)}),backgroundColor:'#ED7D31',borderRadius:6}]},
+      options:{responsive:true,maintainAspectRatio:false}});
+    c1.__month=true; charts.push(c1);
+    const c2=new Chart(document.getElementById('chNet'),{type:'bar',
+      data:{labels:months,datasets:[{label:'净流入',data:months.map(m=>{const es=state.entries.filter(e=>(e.date||'').startsWith(m));return es.reduce((s,e)=>s+(+e.income||0)-(+e.expense||0),0)}),backgroundColor:'#2E8B57',borderRadius:6}]},
+      options:{responsive:true,maintainAspectRatio:false}});
+    c2.__month=true; charts.push(c2);
+  }
+}
+
+/* ================= 统计 ================= */
+let charts=[];
+function renderStats(){
+  const c=accountSeries('cash'), b=accountSeries('bank');
+  const ti=totals('cash').income+totals('bank').income, to=totals('cash').expense+totals('bank').expense;
+  document.getElementById('statsKpis').innerHTML=`
+    <div class="kpi"><div class="label">期初资金合计</div><div class="value">¥ ${fmt((state.openings.cash||0)+(state.openings.bank||0))}</div></div>
+    <div class="kpi"><div class="label">收入合计</div><div class="value" style="color:var(--primary)">¥ ${fmt(ti)}</div></div>
+    <div class="kpi"><div class="label">支出合计</div><div class="value" style="color:var(--orange)">¥ ${fmt(to)}</div></div>
+    <div class="kpi"><div class="label">期末资金合计</div><div class="value" style="color:var(--primary-dark)">¥ ${fmt(c.closing+b.closing)}</div></div>
+    <div class="kpi"><div class="label">净流入</div><div class="value" style="color:${ti-to>=0?'var(--green)':'var(--red)'}">¥ ${fmt(ti-to)}</div></div>`;
+  charts.filter(c=>!c.__month).forEach(ch=>ch.destroy());
+  charts=charts.filter(c=>c.__month);
+  Chart.defaults.font.family='"PingFang SC","Microsoft YaHei",sans-serif';
+
+  const accCtx=document.getElementById('chAcc');
+  charts.push(new Chart(accCtx,{type:'bar',data:{labels:['库存现金','银行存款'],datasets:[
+    {label:'收入',data:[totals('cash').income,totals('bank').income],backgroundColor:'#4472C4',borderRadius:6},
+    {label:'支出',data:[totals('cash').expense,totals('bank').expense],backgroundColor:'#ED7D31',borderRadius:6}]},
+    options:{responsive:true,maintainAspectRatio:false}}));
+
+  const bySub={};
+  state.entries.filter(e=>+e.expense>0).forEach(e=>bySub[e.subject]=(bySub[e.subject]||0)+(+e.expense));
+  const subs=Object.entries(bySub).sort((a,b)=>b[1]-a[1]);
+  charts.push(new Chart(document.getElementById('chSubject'),{type:'doughnut',
+    data:{labels:subs.map(x=>x[0]),datasets:[{data:subs.map(x=>x[1]),backgroundColor:['#4472C4','#ED7D31','#70AD47','#FFC000','#7030A0','#4BACC6','#B2355B','#8497B0']}]} ,
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right'},tooltip:{callbacks:{label:c=>`${c.label}: ¥${fmt(c.parsed)} (${(c.parsed/subs.reduce((s,x)=>s+x[1],0)*100).toFixed(1)}%)`}}}}}));
+
+  const byProj={};
+  state.entries.forEach(e=>{const k=e.project||'未归属'; byProj[k]=byProj[k]||{i:0,o:0}; byProj[k].i+=+e.income||0; byProj[k].o+=+e.expense||0;});
+  const projs=Object.keys(byProj);
+  charts.push(new Chart(document.getElementById('chProject'),{type:'bar',
+    data:{labels:projs,datasets:[{label:'收入',data:projs.map(p=>byProj[p].i),backgroundColor:'#4472C4',borderRadius:6},{label:'支出',data:projs.map(p=>byProj[p].o),backgroundColor:'#ED7D31',borderRadius:6}]},
+    options:{responsive:true,maintainAspectRatio:false}}));
+
+  const dates=[...new Set(state.entries.map(e=>e.date))].sort();
+  const cashBal=dates.map(d=>accountSeries('cash',d).byDate[d]??(state.openings.cash||0));
+  const bankBal=dates.map(d=>accountSeries('bank',d).byDate[d]??(state.openings.bank||0));
+  charts.push(new Chart(document.getElementById('chTrend'),{type:'line',
+    data:{labels:dates,datasets:[
+      {label:'现金结余',data:cashBal,borderColor:'#2F5597',backgroundColor:'rgba(47,85,151,.1)',fill:true,tension:.3},
+      {label:'银行结余',data:bankBal,borderColor:'#2E8B57',backgroundColor:'rgba(46,139,87,.1)',fill:true,tension:.3}]},
+    options:{responsive:true,maintainAspectRatio:false}}));
+}
+
+/* ================= 设置 ================= */
+function renderSettings(){
+  document.getElementById('s-cash').value=state.openings.cash;
+  document.getElementById('s-bank').value=state.openings.bank;
+  document.getElementById('subjectChips').innerHTML=state.subjects.map((s,i)=>`<span class="chip">${s}<button onclick="delItem('subjects',${i})">×</button></span>`).join('');
+  document.getElementById('projectChips').innerHTML=state.projects.map((p,i)=>`<span class="chip">${p}<button onclick="delItem('projects',${i})">×</button></span>`).join('');
+}
+function saveOpenings(){ state.openings.cash=+document.getElementById('s-cash').value||0; state.openings.bank=+document.getElementById('s-bank').value||0; save(); toast('✓ 期初已保存，余额已重算'); renderAll(); }
+function addSubject(){ const v=document.getElementById('newSubject').value.trim(); if(!v) return; if(state.subjects.includes(v)) return toast('科目已存在'); state.subjects.push(v); save(); document.getElementById('newSubject').value=''; renderSettings(); toast('✓ 已添加'); }
+function addProject(){ const v=document.getElementById('newProject').value.trim(); if(!v) return; if(state.projects.includes(v)) return toast('项目已存在'); state.projects.push(v); save(); document.getElementById('newProject').value=''; renderSettings(); toast('✓ 已添加'); }
+function delItem(kind,i){ state[kind].splice(i,1); save(); renderSettings(); }
+function clearAll(){
+  if(!confirm('⚠ 将删除全部流水、科目、项目与期初设置，且不可恢复！建议先「备份」。确定继续？')) return;
+  if(!confirm('再次确认：真的要清空全部数据吗？')) return;
+  localStorage.removeItem(LS_KEY); state=load(); save(); renderAll(); toast('已清空并恢复示例数据');
+}
+function exportCSV(all){
+  const rows=all? state.entries : filtered();
+  const head=['日期','账户','凭证字号','摘要','对方科目','项目','结算方式','收入（借方）','支出（贷方）','结余','对账状态'];
+  const lines=[head.join(',')].concat(rows.map(e=>[e.date,e.account==='cash'?'库存现金':'银行存款',e.voucher,e.summary,e.subject,e.project||'',e.settle||'',e.income||0,e.expense||0,runningBalance(e).toFixed(2),e.recon].map(x=>`"${String(x).replace(/"/g,'""')}"`).join(',')));
+  const blob=new Blob(['\uFEFF'+lines.join('\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`日记账导出_${new Date().toISOString().slice(0,10)}.csv`; a.click();
+  toast('✓ 已导出 CSV，可直接用 Excel 打开');
+}
+function backupJSON(){
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`日记账备份_${new Date().toISOString().slice(0,10)}.json`; a.click();
+}
+function restoreJSON(input){
+  const f=input.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{ try{ const s=JSON.parse(r.result); if(!s.entries) throw 0; state=s; save(); renderAll(); toast('✓ 备份已恢复'); }catch(e){ toast('文件格式不正确'); } };
+  r.readAsText(f); input.value='';
+}
+/* CSV 导入（兼容本系统导出格式） */
+function importCSV(input){
+  const f=input.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const text=r.result.replace(/^\uFEFF/,'');
+      const lines=text.split(/\r?\n/).filter(l=>l.trim());
+      const parseLine=l=>{ const out=[]; let cur='',q=false;
+        for(let i=0;i<l.length;i++){ const ch=l[i];
+          if(q){ if(ch==='"'){ if(l[i+1]==='"'){cur+='"';i++;} else q=false; } else cur+=ch; }
+          else{ if(ch==='"') q=true; else if(ch===','){ out.push(cur); cur=''; } else cur+=ch; } }
+        out.push(cur); return out; };
+      const head=parseLine(lines[0]);
+      const col=n=>head.findIndex(h=>h.includes(n));
+      const ci={date:col('日期'),acc:col('账户'),v:col('凭证字号'),s:col('摘要'),sub:col('对方科目'),p:col('项目'),st:col('结算方式'),i:col('收入'),o:col('支出'),r:col('对账')};
+      if(ci.date<0||ci.i<0) throw 0;
+      let n=0;
+      for(let k=1;k<lines.length;k++){
+        const c=parseLine(lines[k]);
+        if(!c[ci.date]) continue;
+        const acc=(c[ci.acc]||'').includes('现金')?'cash':'bank';
+        state.entries.push({ id:uid(), seq:(state.entries.length?Math.max(...state.entries.map(x=>x.seq||0))+1:1),
+          date:c[ci.date], account:acc, voucher:c[ci.v]||'', summary:c[ci.s]||'', subject:c[ci.sub]||'',
+          project:c[ci.p]||'', settle:(c[ci.st]||'').includes('—')?'':(c[ci.st]||''),
+          income:+c[ci.i]||0, expense:+c[ci.o]||0, recon:RECON.includes(c[ci.r])?c[ci.r]:'未核对' });
+        n++;
+      }
+      save(); renderAll(); toast(`✓ 已导入 ${n} 条流水`);
+    }catch(e){ toast('CSV 格式不正确（请使用本系统导出的格式）'); }
+  };
+  r.readAsText(f,'utf-8'); input.value='';
+}
+
+/* ================= 初始化 ================= */
+function renderAll(){
+  renderEntry(); renderLedger(); renderDaily(); renderRecon(); renderReport(); renderStats(); renderSettings();
+}
+document.getElementById('todayText').textContent = new Date().toLocaleDateString('zh-CN',{year:'numeric',month:'long',day:'numeric',weekday:'long'});
+document.getElementById('f-date').value = new Date().toISOString().slice(0,10);
+document.getElementById('dailyMonth').value = new Date().toISOString().slice(0,7);
+renderAll();
+</script>
+</body>
+</html>
