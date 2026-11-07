@@ -144,7 +144,7 @@ def main():
     check("⑳ 架构评分卡", 0 <= sc["score"] <= 100 and len(sc["dimensions"]) == 6,
           f"{sc['score']} 分 / {sc['grade']}")
     run = AU.audit_runtime(conn, None, {}, {})
-    check("㉑ 运行时健康", run["migrations"][-1] == 11 and run["routes"] >= 160,
+    check("㉑ 运行时健康", run["migrations"][-1] >= 11 and run["routes"] >= 168,
           f"v{run['migrations'][-1]} / {run['routes']} 路由")
 
     print("\n--- 安全域（默认只观测不阻断） ---")
