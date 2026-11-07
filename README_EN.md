@@ -4,7 +4,7 @@ A self-hosted accounting + cashier system covering the full bookkeeping cycle:
 **business documents → approval → automatic vouchers → posting → journals → reconciliation → period close → financial statements → business analytics & forecasting**.
 Built with the **Python standard library + SQLite only — zero third-party dependencies**, with built-in internal controls (immutable ledger, audit hash chain, maker-checker segregation).
 
-> Version: V2.9 ｜ Front-end/back-end separated (vanilla JS SPA + REST API) ｜ Database: SQLite (WAL)
+> Version: V2.10 ｜ Front-end/back-end separated (vanilla JS SPA + REST API) ｜ Database: SQLite (WAL) ｜ Tests: 5 suites, 203 assertions + pre-commit + CI
 > 中文文档：[README.md](README.md) ｜ [用户手册.md](journal-pro/docs/用户手册.md)
 
 ---
@@ -42,6 +42,13 @@ Built with the **Python standard library + SQLite only — zero third-party depe
 | Security center | RBAC operators & roles, login sessions (lockout), sensitive-op audit, rate limiting, input scanning, data masking, CSRF |
 
 Security policies are **observe-only by default**; enable real blocking in the Security Center.
+
+### Tax Center (V2.10 — all tax amounts & ratios to 2 decimal places)
+
+Output/input VAT ledgers grouped by inferred rate, input certification, VAT filing simulation (idempotent), surtaxes,
+**two-point tax-burden control** (below floor = underpayment risk, above ceiling = overpayment; percentages to 2dp),
+quarterly CIT prepayment (automatic small-micro bracket), annual settlement with entertainment-expense cap,
+payroll with social insurance & **cumulative withholding IIT**, special additional deductions, stamp duty calculator, filing calendar.
 
 ### Reports & Forecasting
 
@@ -94,16 +101,20 @@ python server.py            # open http://127.0.0.1:8765
 
 Database migrations run automatically on first start (versioned via `schema_version`, currently v11).
 
-## Regression Tests
+## Tests & Quality Gates
 
 ```bash
 cd journal-pro
-python tests/test_reports.py      # report rigor + API smoke (34)
-python tests/test_features.py     # V2.5 features (48)
-python tests/test_core.py         # unified kernel / forecast / impact graph (44)
-python tests/test_v28.py          # V2.8 features & security (47)
-# 173 assertions in total, all against throwaway ledgers
+python run_tests.py             # run all 5 regression suites (203 assertions, ~10s)
+python run_tests.py core tax    # selected suites only
+run_tests.bat                   # Windows double-click
 ```
+
+Quality gates so future changes cannot silently break behavior:
+
+1. **Pre-commit hook**: after `git config core.hooksPath .githooks`, every `git commit` runs the suites — **a failing regression blocks the commit** (verified; escape hatch: `--no-verify`);
+2. **CI**: `.github/workflows/ci.yml` runs all suites on every push / PR (Python 3.10 / 3.12 matrix);
+3. All 203 assertions run against throwaway ledgers. See [docs/TESTING.md](docs/TESTING.md).
 
 ## Documentation
 
@@ -112,7 +123,8 @@ python tests/test_v28.py          # V2.8 features & security (47)
 | [docs/User_Manual_EN.md](journal-pro/docs/User_Manual_EN.md) | English user manual |
 | [docs/用户手册.md](journal-pro/docs/用户手册.md) | 中文用户手册（27 章） |
 | [README.md](README.md) | 中文 README |
-| docs/会计出纳系统需求规格说明书.md | Requirements specification (R-01 ~ R-79) |
+| [docs/TESTING.md](docs/TESTING.md) | Testing guide (bilingual) |
+| docs/会计出纳系统需求规格说明书.md | Requirements specification (R-01 ~ R-80) |
 | Online help | In-app Help Center, switchable 中文 / English |
 
 ## Security & Privacy

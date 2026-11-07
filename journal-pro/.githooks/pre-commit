@@ -1,0 +1,14 @@
+#!/bin/sh
+# 提交前自动运行全部回归测试（203 项断言）。
+# 确需跳过：git commit --no-verify —— 但请先修复失败的测试。
+echo "[pre-commit] 运行回归测试（约 10 秒）..."
+python run_tests.py --fast
+code=$?
+if [ $code -ne 0 ]; then
+  echo ""
+  echo "✗ 回归测试未通过，提交已被阻止。"
+  echo "  完整套件：python run_tests.py"
+  echo "  （确需跳过本次检查：git commit --no-verify）"
+  exit $code
+fi
+echo "[pre-commit] 测试全部通过 ✓"

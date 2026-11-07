@@ -1,0 +1,15 @@
+#!/bin/sh
+# 提交前自动运行回归测试（core/features/tax/v28 四套快件，reports 为完整套件可用 run_tests.py 单独跑）。
+# 确需跳过：git commit --no-verify —— 但请先修复失败的测试。
+echo "[pre-commit] 运行回归测试..."
+cd "$(git rev-parse --show-toplevel)/journal-pro"
+python run_tests.py --fast
+code=$?
+if [ $code -ne 0 ]; then
+  echo ""
+  echo "✗ 回归测试未通过，提交已被阻止。"
+  echo "  完整套件：python run_tests.py（含 reports 套件）"
+  echo "  （确需跳过本次检查：git commit --no-verify）"
+  exit $code
+fi
+echo "[pre-commit] 测试全部通过 ✓"
