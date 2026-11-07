@@ -1610,8 +1610,6 @@ def portable_export(conn, m, body, qs):
             rp = os.path.join(os.path.dirname(BASE), rf)
             if os.path.exists(rp):
                 z.write(rp, rf)
-        for d in ("migrations", "core", "app"):
-            _zip_dir(z, os.path.join(BASE, d), d)
         _zip_dir(z, os.path.join(BASE, "public"), "public")
         _zip_dir(z, os.path.join(BASE, "docs"), "docs")
         tests_dir = os.path.join(BASE, "tests")
