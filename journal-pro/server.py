@@ -1602,6 +1602,11 @@ def portable_export(conn, m, body, qs):
     with zf.ZipFile(buf, "w", zf.ZIP_DEFLATED) as z:
         for f in ("server.py", "db.py", "office.py", "features.py", "analytics_api.py"):
             z.write(os.path.join(BASE, f), f)
+        # 双语 README 位于项目上级目录（git 仓库根），一并打进迁移包
+        for rf in ("README.md", "README_EN.md"):
+            rp = os.path.join(os.path.dirname(BASE), rf)
+            if os.path.exists(rp):
+                z.write(rp, rf)
         for d in ("migrations", "core", "app"):
             _zip_dir(z, os.path.join(BASE, d), d)
         _zip_dir(z, os.path.join(BASE, "public"), "public")
