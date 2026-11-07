@@ -123,3 +123,26 @@ The metric handbook (formula / source / scope / limitation) and the data-lineage
 - Any write operation shows a **data-linkage panel** listing affected downstream analyses.
 - Amounts: the analysis report switches between yuan and 10k-yuan automatically; statements are always in yuan.
 - Keyboard: Enter in search boxes triggers search; modals close with the mask click.
+
+
+---
+
+## 30. Guide for Non-Technical Users (no code / no JSON)
+
+Since V2.12, **no workbench shows code or JSON**. Every result is a Chinese table, a labelled info card or a downloadable file.
+
+- Each workbench starts with a **"How to use"** banner and **quick-action buttons** (e.g. Batch Posting, Cash Count, Run Payroll). Click one to jump straight to that card.
+- A card = one action: Chinese form fields on top, a **Chinese result table** below. Click the blue button and read the table — column names, amounts (¥ with thousands separators) and statuses (Yes/No, Healthy/Attention, Done/Pending) are all translated automatically.
+- "Download file" buttons produce Excel-friendly CSV files; file pickers let you choose a statement downloaded from your bank.
+
+| I want to… | Go to | Action |
+|---|---|---|
+| Monthly results and balanced books | Financial Statements | Pick a month; all three statements refresh |
+| A full business report | Data Analysis → Business Analysis Report | Pick a month → Print to PDF / export HTML |
+| Issue invoices in bulk | External Collaboration | Sync pending → download template → upload on the tax portal → enter invoice numbers back here |
+| Run payroll & IIT | Tax Center → Run Payroll | Click Execute; the payroll table appears in Chinese |
+| Check tax burden | Tax Center → Tax Ratios | Monthly percentages with Low / In range / High labels |
+| Count cash | Cashier Workbench → Cash Count | Type note counts; counted total and difference are computed |
+| Import a bank statement | External Collaboration → Import Statement | Choose bank format → choose file → Import & dedupe |
+
+Note: always enter through the **left-hand menu**. Typing `/api/...` directly in the address bar shows internal machine data, not a user page. Technical health items are translated into plain Chinese and can be ignored in daily bookkeeping.
