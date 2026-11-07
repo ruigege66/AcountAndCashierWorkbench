@@ -1,15 +1,30 @@
 #!/bin/sh
-# 提交前自动运行回归测试（core/features/tax/v28 四套快件，reports 为完整套件可用 run_tests.py 单独跑）。
-# 确需跳过：git commit --no-verify —— 但请先修复失败的测试。
-echo "[pre-commit] 运行回归测试..."
-cd "$(git rev-parse --show-toplevel)/journal-pro"
-python run_tests.py --fast
+# 提交前回归测试。原则：环境有问题时放行并警告，绝不因钩子自身故障锁死提交。
+# 跳过本次检查：git commit --no-verify
+
+cd "$(git rev-parse --show-toplevel)/journal-pro" || exit 0
+
+PY=""
+for cand in python3 python py; do
+  if command -v "$cand" > /dev/null 2>&1; then PY="$cand"; break; fi
+done
+if [ -z "$PY" ]; then
+  echo "[pre-commit] ⚠ 未找到 Python，跳过回归测试（请自行运行 run_tests.bat 确认）"
+  exit 0
+fi
+
+echo "[pre-commit] 运行回归测试（$PY）..."
+"$PY" run_tests.py --fast
 code=$?
+if [ $code -eq 127 ] || [ $code -eq 9009 ]; then
+  echo "[pre-commit] ⚠ Python 调用失败，跳过回归测试（不阻断提交）"
+  exit 0
+fi
 if [ $code -ne 0 ]; then
   echo ""
-  echo "✗ 回归测试未通过，提交已被阻止。"
-  echo "  完整套件：python run_tests.py（含 reports 套件）"
-  echo "  （确需跳过本次检查：git commit --no-verify）"
-  exit $code
+  echo "✗ 回归测试未通过，提交已被阻止。两条出路："
+  echo "  1) 查看上面失败的用例并修复（推荐）：python run_tests.py"
+  echo "  2) 确认无需修复后跳过本次检查：git commit --no-verify"
+  exit 1
 fi
 echo "[pre-commit] 测试全部通过 ✓"
