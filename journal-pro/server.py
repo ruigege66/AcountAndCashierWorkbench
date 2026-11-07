@@ -1600,8 +1600,11 @@ def portable_export(conn, m, body, qs):
     conn.execute("VACUUM INTO ?", (snap,))
     buf = io.BytesIO()
     with zf.ZipFile(buf, "w", zf.ZIP_DEFLATED) as z:
-        for f in ("server.py", "db.py", "office.py", "features.py", "analytics_api.py"):
+        for f in ("server.py", "db.py", "office.py", "features.py", "analytics_api.py",
+                  "run_tests.py", "run_tests.bat", "run_tests.sh"):
             z.write(os.path.join(BASE, f), f)
+        for d in ("migrations", "core", "app", ".githooks", ".github"):
+            _zip_dir(z, os.path.join(BASE, d), d)
         # 双语 README 位于项目上级目录（git 仓库根），一并打进迁移包
         for rf in ("README.md", "README_EN.md"):
             rp = os.path.join(os.path.dirname(BASE), rf)
