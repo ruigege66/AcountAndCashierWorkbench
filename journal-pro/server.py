@@ -2035,10 +2035,15 @@ def audit_stats(conn, m, body, qs):
 
 @route("GET", r"/api/manual")
 def get_manual(conn, m, body, qs):
-    path = os.path.join(BASE, "docs", "用户手册.md")
+    lang = (qs.get("lang") or ["zh"])[0]
+    fname = "User_Manual_EN.md" if lang == "en" else "用户手册.md"
+    path = os.path.join(BASE, "docs", fname)
     if not os.path.exists(path):
-        return {"content": "# 用户手册\n\n手册文件尚未生成：docs/用户手册.md"}
-    return {"content": open(path, encoding="utf-8").read(), "updated_at": now()}
+        fallback = os.path.join(BASE, "docs", "用户手册.md")
+        path = fallback if os.path.exists(fallback) else path
+    if not os.path.exists(path):
+        return {"content": "# 用户手册\n\n手册文件尚未生成：docs/用户手册.md", "lang": lang}
+    return {"content": open(path, encoding="utf-8").read(), "lang": lang, "updated_at": now()}
 
 
 # ---------------- 往来账 / 财务报表（资产负债表·利润表·勾稽） ----------------

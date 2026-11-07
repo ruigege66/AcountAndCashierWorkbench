@@ -667,9 +667,13 @@ const PAGES = {
   },
 
   help: async () => {
-    const m = await api('/api/manual');
-    return `<div class="page-head"><div><h2>帮助中心 · 用户手册</h2>
-      <div class="hint">更新时间 ${esc(m.updated_at)} · 源文件 docs/用户手册.md · 随系统离线可用</div></div></div>
+    const lang = S.filters.manualLang || 'zh';
+    const m = await api('/api/manual?lang=' + lang);
+    return `<div class="page-head"><div><h2>帮助中心 · 用户手册 Help Center · User Manual</h2>
+      <div class="hint">更新时间 ${esc(m.updated_at)} · 源文件 docs/${lang === 'en' ? 'User_Manual_EN.md' : '用户手册.md'} · 随系统离线可用</div></div>
+      <select onchange="S.filters.manualLang=this.value;render()" style="width:130px">
+        <option value="zh" ${lang === 'zh' ? 'selected' : ''}>中文手册</option>
+        <option value="en" ${lang === 'en' ? 'selected' : ''}>English Manual</option></select></div>
       <div class="card manual">${mdToHtml(m.content)}</div>`;
   },
 
