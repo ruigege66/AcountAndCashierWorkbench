@@ -9,7 +9,7 @@
 单机可部署的会计 + 出纳一体化系统：**Python 标准库 + SQLite，零第三方依赖**。
 覆盖业务单据 → 审批 → 自动凭证 → 过账 → 日记帐 → 对账 → 期末结账 → 三大报表 → 经营分析与预测的完整链路，内置内控合规（不可变账本、审计哈希链、职责分离）。
 
-> 版本：V2.16 ｜ 前后端分离（原生 JS SPA + REST API）｜ 数据库：SQLite（WAL）｜ 测试：11 套回归 336 项断言 + pre-commit + CI
+> 版本：V2.16 ｜ 前后端分离（原生 JS SPA + REST API）｜ 数据库：SQLite（WAL）｜ 测试：11 套回归 337 项断言 + pre-commit + CI
 
 ---
 
@@ -81,7 +81,7 @@ core/                       领域层（零 SQL、零 HTTP、零反向导入）
 server.py                   HTTP 适配层与核心报表实现
 features.py / analytics_api.py  控制器（瘦）
 public/js/*.js              前端 10 个模块（38 页面 / 42 页面注册）
-tests/ + run_tests.py       11 套回归测试，336 项断言（含前端完整性 10 项）
+tests/ + run_tests.py       11 套回归测试，337 项断言（含前端完整性 11 项）
 docs/                       用户手册（中 / 英）、需求规格说明书、需求跟踪矩阵
 ```
 
@@ -109,7 +109,7 @@ python server.py            # 浏览器打开 http://127.0.0.1:8765
 
 ```bash
 cd journal-pro
-python run_tests.py             # 一键运行全部 11 套回归（336 项断言，约 12 秒）
+python run_tests.py             # 一键运行全部 11 套回归（337 项断言，约 12 秒）
 python run_tests.py core tax    # 只跑指定套件
 python run_tests.py --fast      # 快速模式（跳过最慢套件）
 run_tests.bat                   # Windows 双击版

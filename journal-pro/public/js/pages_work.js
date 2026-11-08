@@ -278,6 +278,12 @@ const POSITION_ROLES = [
 ];
 function currentPosition() { return localStorage.getItem('position') || 'all'; }
 function setPosition(p) { localStorage.setItem('position', p); renderNav(); render(); }
+/* 侧栏永远是「全部功能」优先：任何视角下所有分组都展开，不折叠内容 */
+function showAllFeatures() {
+  localStorage.setItem('position', 'all');
+  renderNav(); render();
+  try { toast('已显示全部 65 项功能'); } catch (e) {}
+}
 
 function navTreeHtml() {
   const pos = currentPosition() || 'all';
@@ -293,14 +299,18 @@ function navTreeHtml() {
     ['系统与安全', ['base','system','compliance','risk','audit','monitor','sec_center','arch_audit','help']],
   ];
   const lv = NAV_LEVELS[pos];
-  const groups = pos === 'all' ? GROUPS_ALL : lv.groups;
+  const groups = pos === 'all' ? GROUPS_ALL : (lv ? lv.groups : GROUPS_ALL);
   const rolesHtml = POSITION_ROLES.map(r =>
     `<button data-position="${r.id}" style="display:block;width:100%;text-align:left;${pos === r.id ? 'color:var(--primary);font-weight:500' : 'color:var(--text2)'}" onclick="setPosition('${r.id}')">${r.id === pos ? '● ' : '○ '}${esc(r.name)}</button>`).join('');
-  let out = `<div data-navver="V217B"></div><details open style="border-bottom:1px solid var(--border)"><summary style="cursor:pointer;padding:8px 12px;font-size:12px">👤 岗位视角（当前：${esc((POSITION_ROLES.find(r=>r.id===pos)||{}).name||'全部功能')}，点击切换）</summary><div style="padding:4px 8px">${rolesHtml}</div></details>`;
+  let out = `<div data-navver="V218"></div><details style="border-bottom:1px solid rgba(255,255,255,.08)"><summary style="cursor:pointer;padding:8px 12px;font-size:12px">👤 岗位视角（当前：${esc((POSITION_ROLES.find(r=>r.id===pos)||{}).name||'全部功能')}）</summary><div style="padding:4px 8px">${rolesHtml}</div></details>`;
+  if (pos !== 'all') {
+    out += `<div style="padding:8px 12px;font-size:11.5px;line-height:1.6;color:#F3C969;background:rgba(255,255,255,.05)">
+      ⚠ 当前是「岗位视角」，只列本档功能。要看到全部 65 项请点顶部「☰ 全部功能」。</div>`;
+  }
+  // 分组一律展开：用户要的是能一眼看到所有功能，不需要再点一次
   for (const [title, pages] of groups) {
     const btns = pages.map(p => `<button data-page="${p}" style="display:block;width:100%;text-align:left">${esc(NAV_LABEL[p] || p)}</button>`).join('');
-    const openAttr = pos === 'all' ? ' open' : '';
-    out += `<details${openAttr} style="border-bottom:1px solid var(--border)"><summary style="cursor:pointer;padding:9px 12px;font-size:12.5px;font-weight:500">${esc(title)}（${pages.length}）</summary><div>${btns}</div></details>`;
+    out += `<details open style="border-bottom:1px solid rgba(255,255,255,.08)"><summary style="cursor:pointer;padding:9px 12px;font-size:12.5px;font-weight:500">${esc(title)}（${pages.length}）</summary><div>${btns}</div></details>`;
   }
   return out;
 }
@@ -377,7 +387,9 @@ function renderNav() {
   try {
     el.innerHTML = navTreeHtml();
   } catch (e) {
-    el.innerHTML = '<div style="padding:12px;font-size:12px;color:#b42318">⚠ 侧栏渲染出错：' + esc(e.message) + '</div>';
+    // 动态渲染失败时不把侧栏清空：保留 index.html 里的静态入口，只在最上面加一条提示
+    el.innerHTML = '<div style="padding:10px 12px;font-size:12px;line-height:1.6;color:#F3C969;background:rgba(255,255,255,.06)">⚠ 侧栏动态渲染失败（'
+      + esc(e.message) + '），以下是基础入口，仍可点击。</div>' + el.innerHTML;
     return;
   }
   el.onclick = function (e) {
@@ -387,6 +399,7 @@ function renderNav() {
     if (n.dataset.position) { setPosition(n.dataset.position); return; }
     if (n.dataset.page) go(n.dataset.page);
   };
+  try { const box = el.parentNode; if (box && box.scrollTo) box.scrollTo(0, 0); } catch (e) {}
   try { if (S && S.page) highlightNav(S.page); } catch (e) {}
 }
 function highlightNav(page) {

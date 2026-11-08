@@ -12,6 +12,20 @@ aside{width:242px;background:#1E2A44;color:#C9D4EA;flex-shrink:0;display:flex;fl
 aside::-webkit-scrollbar{width:6px}
 aside::-webkit-scrollbar-thumb{background:#4A5B7A;border-radius:3px}
 aside::-webkit-scrollbar-track{background:transparent}
+/* 顶部固定条：不管侧栏滚到哪，「搜索 + 全部功能」始终点得到 */
+aside .side-top{position:sticky;top:0;z-index:20;background:#1E2A44;padding:10px 12px 8px;
+  border-bottom:1px solid rgba(255,255,255,.08);box-shadow:0 6px 12px -8px #000}
+aside .side-top input{background:#2A3A5C;border:1px solid #3E5177;color:#E6EDF9;border-radius:6px}
+aside .side-all{display:block;width:100%;margin-top:6px;text-align:left;font-size:12px;color:#C9D4EA;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:6px 10px}
+aside .side-all:hover{background:rgba(255,255,255,.14);color:#fff}
+/* 静态兜底列表（脚本未渲染成功时可见可点） */
+aside .ns-group{padding:6px 0 2px;border-bottom:1px solid rgba(255,255,255,.06)}
+aside .ns-title{padding:6px 14px 4px;font-size:12px;color:#9FB0CC;font-weight:600}
+aside .nav-static a{display:block;padding:7px 14px 7px 22px;color:#C9D4EA;text-decoration:none;font-size:13px}
+aside .nav-static a:hover{background:rgba(255,255,255,.08);color:#fff}
+header .build{font-size:11px;color:var(--text2);background:var(--grey-bg);border:1px solid var(--border);
+  border-radius:10px;padding:2px 8px}
 
 /* V2.6 数据联动提示：任何写操作后展示它影响了哪些下游分析 */
 .impact-box{position:fixed;right:18px;bottom:18px;width:370px;max-height:70vh;overflow-y:auto;

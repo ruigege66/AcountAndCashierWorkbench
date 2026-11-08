@@ -10,19 +10,105 @@
 <body>
 <div class="layout">
   <aside style="position:relative">
-    <div style="padding:10px 12px;border-bottom:1px solid var(--border)">
+    <div class="side-top">
       <input id="globalSearch" placeholder="🔍 找功能：开票 / 盘点 / 审计…" oninput="showSearchResults(this.value)"
         style="width:100%;font-size:12px" autocomplete="off">
-      <div id="searchResults" style="display:none;position:absolute;left:10px;right:10px;top:52px;z-index:99;
+      <button class="side-all" onclick="showAllFeatures()">☰ 全部功能（65 项，点此展开）</button>
+      <div id="searchResults" style="display:none;position:absolute;left:10px;right:10px;top:82px;z-index:99;
         background:var(--card);border:1px solid var(--border);border-radius:8px;box-shadow:0 6px 20px rgba(20,40,80,.15);
         max-height:340px;overflow:auto"></div>
     </div>
-    <div id="navTree"></div>
+    <div id="navTree"><!-- 侧栏静态兜底：脚本没渲染成功时仍可点（#锚点跳转）。renderNav() 成功后整体替换。 -->
+<div class="nav-static">
+  <div class="ns-group"><div class="ns-title">工作台 · 11 项工作（13）</div>
+    <a href="#dashboard">今日工作台</a>
+    <a href="#work_overview">11 项工作总览</a>
+    <a href="#work_1">账务核算</a>
+    <a href="#work_2">财务与预算</a>
+    <a href="#work_3">合同法务（中级）</a>
+    <a href="#work_4">集团与战略财务</a>
+    <a href="#work_5">准则核算</a>
+    <a href="#work_6">审计鉴证</a>
+    <a href="#work_7">成本与估值</a>
+    <a href="#work_8">商事合规</a>
+    <a href="#work_9">全税种管理</a>
+    <a href="#work_10">战略与风控</a>
+    <a href="#work_11">重大项目综合</a>
+  </div>
+  <div class="ns-group"><div class="ns-title">财务核算（20）</div>
+    <a href="#docs">业务单据</a>
+    <a href="#invoices">发票管理</a>
+    <a href="#assets">固定资产</a>
+    <a href="#vouchers">凭证管理</a>
+    <a href="#journal">现金银行日记账</a>
+    <a href="#books">账簿与分析</a>
+    <a href="#fin">财务报表</a>
+    <a href="#cfstmt">现金流量表（正表）</a>
+    <a href="#reports">报表中心</a>
+    <a href="#ratios">财务比率分析</a>
+    <a href="#compare">同比环比分析</a>
+    <a href="#daily">日结核对</a>
+    <a href="#recon">银行对账</a>
+    <a href="#periods">期末结账</a>
+    <a href="#baddebt">坏账准备计提</a>
+    <a href="#yearend">年度结转</a>
+    <a href="#snapshots">报表快照归档</a>
+    <a href="#collection">往来催收清单</a>
+    <a href="#partner">往来账</a>
+    <a href="#subjects">会计科目模板</a>
+  </div>
+  <div class="ns-group"><div class="ns-title">税务管理（1）</div>
+    <a href="#tax_center">税务中心</a>
+  </div>
+  <div class="ns-group"><div class="ns-title">数据分析（9）</div>
+    <a href="#analysis">在线经营分析报告</a>
+    <a href="#graph">功能联动关系</a>
+    <a href="#graph_map">知识图谱</a>
+    <a href="#seven_center">七流分析</a>
+    <a href="#competency_center">四流与能力图谱</a>
+    <a href="#role_center">岗位与能力进阶</a>
+    <a href="#advanced_center">高阶核算与模型</a>
+    <a href="#rules">分析规则配置</a>
+    <a href="#macro_center">宏观经济会计</a>
+  </div>
+  <div class="ns-group"><div class="ns-title">法务 · 审计 · 监管（3）</div>
+    <a href="#legal_center">法务管理</a>
+    <a href="#audit_center">内部审计</a>
+    <a href="#reg_center">金融监管会计</a>
+  </div>
+  <div class="ns-group"><div class="ns-title">外部协同（3）</div>
+    <a href="#gateway_center">开票 / 网银协同</a>
+    <a href="#stmtimport">对账单批量导入</a>
+    <a href="#office">导入导出中心</a>
+  </div>
+  <div class="ns-group"><div class="ns-title">效率工具（7）</div>
+    <a href="#acct_tools">会计工具箱</a>
+    <a href="#cashier_tools">出纳工作台</a>
+    <a href="#todo">我的待办中心</a>
+    <a href="#search">全局搜索</a>
+    <a href="#tpl">常用凭证模板</a>
+    <a href="#print">凭证打印</a>
+    <a href="#vcheck">凭证合规体检</a>
+  </div>
+  <div class="ns-group"><div class="ns-title">系统与安全（9）</div>
+    <a href="#base">基础资料</a>
+    <a href="#system">系统管理</a>
+    <a href="#compliance">内控合规</a>
+    <a href="#risk">风险预警</a>
+    <a href="#audit">审计中心（哈希链）</a>
+    <a href="#monitor">监控大屏</a>
+    <a href="#sec_center">安全中心</a>
+    <a href="#arch_audit">架构审计中心</a>
+    <a href="#help">帮助中心</a>
+  </div>
+</div>
+    </div>
   </aside>
   <div class="main">
     <header>
       <div class="crumb" id="crumb">工作台</div>
       <div class="right">
+        <span class="build" id="buildTag" title="前端版本：如果这里不是最新日期，说明浏览器用的是旧缓存，请按 Ctrl+F5 强制刷新">前端 11-08d</span>
         <span><span class="dot"></span><span id="dbStatus">数据库连接中…</span></span>
         <span>操作员</span><input id="actor" value="出纳" title="用于审计日志">
       </div>

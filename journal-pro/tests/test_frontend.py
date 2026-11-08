@@ -44,6 +44,10 @@ def main():
     jsfiles = sorted(f for f in os.listdir(js_dir) if f.endswith(".js"))
     check("  js 目录非空且含启动脚本", "app.js" in jsfiles and "core.js" in jsfiles, f"{len(jsfiles)} 个文件")
 
+    # 侧栏静态兜底：即使某个 JS 没跑成，index.html 里的 <a href="#page"> 也点得动
+    fallback = re.findall(r'<a href="#(\w+)"', html)
+    check("  侧栏有静态兜底入口（脚本异常也能导航）", len(fallback) >= 60, f"{len(fallback)} 条 <a href=\"#page\">")
+
     # 静态语法检查（node --check）
     node = shutil.which("node")
     if node:
