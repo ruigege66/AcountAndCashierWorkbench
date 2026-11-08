@@ -266,25 +266,36 @@ const NAV_LEVELS = {
   ]},
 };
 const POSITION_ROLES = [
+  { id: 'all', name: '全部功能（默认）' },
   { id: 'business', name: '出纳 / 往来会计（业务操作）' },
   { id: 'manager', name: '总账会计 / 税务 / 审计（核算与分析）' },
   { id: 'executive', name: '财务总监 / CFO（决策与监管）' },
 ];
-function currentPosition() { return localStorage.getItem('position') || 'business'; }
+function currentPosition() { return localStorage.getItem('position') || 'all'; }
 function setPosition(p) { localStorage.setItem('position', p); render(); }
 
 function navTreeHtml() {
-  const pos = currentPosition();
-  const lv = NAV_LEVELS[pos] || NAV_LEVELS.business;
-  const html = POSITION_ROLES.map(r =>
+  const pos = currentPosition() || 'all';
+  // 全部功能模式：8 个大功能 → 全部小功能；岗位模式：只显示该档
+  const GROUPS_ALL = [
+    ['工作台 · 11 项工作', ['dashboard','work_1','work_2','work_3','work_4','work_5','work_6','work_7','work_8','work_9','work_10','work_11']],
+    ['财务核算', ['docs','invoices','assets','vouchers','journal','books','fin','cfstmt','ratios','compare','daily','recon','periods','baddebt','yearend','collection','partner','subjects']],
+    ['税务管理', ['tax_center']],
+    ['数据分析', ['analysis','graph','graph_map','seven_center','competency_center','advanced_center','rules','macro_center']],
+    ['法务 · 审计 · 监管', ['legal_center','audit_center','reg_center']],
+    ['外部协同', ['gateway_center','stmtimport','office']],
+    ['效率工具', ['todo','search','tpl','print','vcheck']],
+    ['系统与安全', ['base','system','compliance','risk','audit','monitor','sec_center','arch_audit','help']],
+  ];
+  const lv = NAV_LEVELS[pos];
+  const groups = pos === 'all' ? GROUPS_ALL : lv.groups;
+  const rolesHtml = POSITION_ROLES.map(r =>
     `<button data-position="${r.id}" style="display:block;width:100%;text-align:left;${pos === r.id ? 'color:var(--primary);font-weight:500' : 'color:var(--text2)'}" onclick="setPosition('${r.id}')">${r.id === pos ? '● ' : '○ '}${esc(r.name)}</button>`).join('');
-  let out = `<details open style="border-bottom:1px solid var(--border)"><summary style="cursor:pointer;padding:8px 12px;font-size:12px">👤 当前岗位视角（点击切换）</summary><div style="padding:4px 8px">${html}</div></details>`;
-  for (const g of lv.groups) {
-    const btns = g.pages.map(p => {
-      const label = NAV_LABEL[p] || p;
-      return `<button data-page="${p}" style="display:block;width:100%;text-align:left">${esc(label)}</button>`;
-    }).join('');
-    out += `<details${pos === 'business' && g.title === '今日必办' ? ' open' : ''} style="border-bottom:1px solid var(--border)"><summary style="cursor:pointer;padding:9px 12px;font-size:12.5px;font-weight:500">${esc(g.title)}</summary><div>${btns}</div></details>`;
+  let out = `<div data-navver="V217B"></div><details open style="border-bottom:1px solid var(--border)"><summary style="cursor:pointer;padding:8px 12px;font-size:12px">👤 岗位视角（当前：${esc((POSITION_ROLES.find(r=>r.id===pos)||{}).name||'全部功能')}，点击切换）</summary><div style="padding:4px 8px">${rolesHtml}</div></details>`;
+  for (const [title, pages] of groups) {
+    const btns = pages.map(p => `<button data-page="${p}" style="display:block;width:100%;text-align:left">${esc(NAV_LABEL[p] || p)}</button>`).join('');
+    const openAttr = pos === 'all' ? ' open' : '';
+    out += `<details${openAttr} style="border-bottom:1px solid var(--border)"><summary style="cursor:pointer;padding:9px 12px;font-size:12.5px;font-weight:500">${esc(title)}（${pages.length}）</summary><div>${btns}</div></details>`;
   }
   return out;
 }
@@ -339,7 +350,7 @@ async function todayDashboard() {
     } catch (e) {}
     try {
       const cov = await api('/api/competency/coverage');
-      tasks.push({ icon: '🧭', label: '能力图谱完整度', n: cov.整体完整度 + '%', page: 'competency_center' });
+      tasks.push({ icon: '🧭', label: '能力图谱完整度', n: (cov.整体完整度 ?? '—') + '%', page: 'competency_center' });
     } catch (e) {}
   }
   return `<div class="card"><h3>今日待我处理</h3>
@@ -364,8 +375,7 @@ function renderNav() {
     out += `<details${pos === 'business' && g.title === '今日必办' ? ' open' : ''} style="border-bottom:1px solid var(--border)"><summary style="cursor:pointer;padding:9px 12px;font-size:12.5px;font-weight:500">${esc(g.title)}</summary><div>${btns}</div></details>`;
   }
   el.innerHTML = out;
-}
-renderNav();
+}try { renderNav(); } catch (e) { document.getElementById('navTree').innerHTML = '⚠ 侧栏渲染错误: ' + e.message; }
 
 const _oldDashboard = PAGES.dashboard;
 
