@@ -25,6 +25,10 @@ function go(page) {
 }
 document.querySelectorAll('aside button').forEach(b => b.onclick = () => go(b.dataset.page));
 
+function safeChart(id, cfg) {
+  try { chart(id, cfg); } catch (e) { console.warn('图表渲染失败（不影响数据展示）:', e.message); }
+}
+
 async function render() {
   destroyCharts();
   if (S.timer) { clearInterval(S.timer); S.timer = null; }
@@ -38,18 +42,18 @@ async function render() {
     $('page').innerHTML = await PAGES[S.page]();
     if (S.page === 'dashboard') {
       const [m, s] = await Promise.all([api('/api/reports/monthly'), api('/api/reports/subjects')]);
-      chart('c1', { type: 'bar', data: { labels: m.items.map(x => x.period), datasets: [
+      safeChart('c1', { type: 'bar', data: { labels: m.items.map(x => x.period), datasets: [
         { label: '收入', data: m.items.map(x => x.income), backgroundColor: '#4472C4', borderRadius: 6 },
         { label: '支出', data: m.items.map(x => x.expense), backgroundColor: '#ED7D31', borderRadius: 6 }] },
         options: { responsive: true, maintainAspectRatio: false } });
       const top = s.items.filter(x => x.debit > 0).sort((a, b) => b.debit - a.debit).slice(0, 6);
-      chart('c2', { type: 'doughnut', data: { labels: top.map(x => x.subject_name || x.subject_code),
+      safeChart('c2', { type: 'doughnut', data: { labels: top.map(x => x.subject_name || x.subject_code),
         datasets: [{ data: top.map(x => x.debit), backgroundColor: ['#4472C4', '#ED7D31', '#70AD47', '#FFC000', '#7030A0', '#4BACC6'] }] },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } } });
     }
     if (S.page === 'reports') {
       const m = await api('/api/reports/monthly');
-      chart('c1', { type: 'bar', data: { labels: m.items.map(x => x.period), datasets: [
+      safeChart('c1', { type: 'bar', data: { labels: m.items.map(x => x.period), datasets: [
         { label: '收入', data: m.items.map(x => x.income), backgroundColor: '#4472C4', borderRadius: 6 },
         { label: '支出', data: m.items.map(x => x.expense), backgroundColor: '#ED7D31', borderRadius: 6 },
         { label: '净流入', data: m.items.map(x => x.income - x.expense), backgroundColor: '#2E8B57', borderRadius: 6 }] },
@@ -61,23 +65,23 @@ async function render() {
       const dark = { responsive: true, maintainAspectRatio: false,
         plugins: { legend: { labels: { color: '#C9D4EA' } } },
         scales: { x: dk, y: dk } };
-      chart('mTrend', { type: 'bar', data: { labels: d.daily.map(x => x.journal_date.slice(5)), datasets: [
+      safeChart('mTrend', { type: 'bar', data: { labels: d.daily.map(x => x.journal_date.slice(5)), datasets: [
         { label: '流入', data: d.daily.map(x => x.income), backgroundColor: '#4472C4', borderRadius: 4 },
         { label: '流出', data: d.daily.map(x => x.expense), backgroundColor: '#ED7D31', borderRadius: 4 }] }, options: dark });
-      chart('mMonths', { type: 'line', data: { labels: d.months.map(x => x.period), datasets: [
+      safeChart('mMonths', { type: 'line', data: { labels: d.months.map(x => x.period), datasets: [
         { label: '收入', data: d.months.map(x => x.income), borderColor: '#60A5FA', backgroundColor: 'rgba(96,165,250,.12)', fill: true, tension: .35 },
         { label: '支出', data: d.months.map(x => x.expense), borderColor: '#F59E0B', backgroundColor: 'rgba(245,158,11,.12)', fill: true, tension: .35 }] }, options: dark });
-      chart('mProj', { type: 'doughnut', data: { labels: d.projects.map(x => x.name),
+      safeChart('mProj', { type: 'doughnut', data: { labels: d.projects.map(x => x.name),
         datasets: [{ data: d.projects.map(x => x.debit), backgroundColor: ['#4472C4', '#ED7D31', '#34D399', '#F472B6', '#FBBF24', '#A78BFA', '#38BDF8', '#94A3B8'] }] },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#C9D4EA' } } } } });
       S.timer = setInterval(() => { if (S.page === 'monitor') render(); else if (S.timer) clearInterval(S.timer); }, Math.max(5, d.refresh || 10) * 1000);
     }
     if (S.page === 'audit' && S._auditStats) {
       const st = S._auditStats;
-      chart('aDay', { type: 'line', data: { labels: st.by_day.map(x => x.d), datasets: [
+      safeChart('aDay', { type: 'line', data: { labels: st.by_day.map(x => x.d), datasets: [
         { label: '操作量', data: st.by_day.map(x => x.n), borderColor: '#4472C4', backgroundColor: 'rgba(68,114,196,.12)', fill: true, tension: .35 }] },
         options: { responsive: true, maintainAspectRatio: false } });
-      chart('aAction', { type: 'bar', data: { labels: st.by_action.map(x => x.action),
+      safeChart('aAction', { type: 'bar', data: { labels: st.by_action.map(x => x.action),
         datasets: [{ label: '次数', data: st.by_action.map(x => x.n), backgroundColor: '#4472C4', borderRadius: 4 }] },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
     }
