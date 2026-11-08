@@ -1,7 +1,7 @@
 # 测试指南 / Testing Guide（中英双语）
 
-> 本项目以「测试不过不能合入」为硬性质量闸门。9 套回归、304 项断言，全部基于临时账套，不影响正式数据。
-> Hard quality gate: 9 regression suites / 304 assertions, all against throwaway ledgers.
+> 本项目以「测试不过不能合入」为硬性质量闸门。10 套回归、326 项断言，全部基于临时账套，不影响正式数据。
+> Hard quality gate: 10 regression suites / 326 assertions, all against throwaway ledgers.
 
 ## 1. 运行 / Running
 
@@ -23,6 +23,7 @@ run_tests.bat                   # Windows 双击 / Windows double-click
 | test_v28 | 47 | V2.8 功能与安全开关（默认只观测）/ V2.8 features & security defaults |
 | test_tax | 30 | 税务两位小数精度、个税累计预扣、小微判定、税负率两点控制 / tax precision & IIT |
 | test_gateway | 25 | 开票/付款文件桥梁、结果回传查重、多格式对账单、凭据存储拒绝 / external-system bridge |
+| test_seven | 22 | 七流/岗位/进阶/管控/合规/演示数据载入与清空 / seven flows & demo data |
 | test_workmap | 14 | 11 工作/四流对齐/步骤状态机/断链清单 / four-flow workbenches |
 | test_competency | 31 | 四流图谱同步/覆盖度/追溯 + FIFO 计价/权益法/递延税/租赁/杜邦/EVA/BS/工作流闭环 / four-flow hub & advanced models |
 | test_domains | 31 | 法务/审计/监管/宏观四域：合同超额拦截、或有负债、分层抽样、函证差异、反洗钱、ECL、压力测试、汇率重估 / four domains |

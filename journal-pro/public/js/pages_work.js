@@ -1,9 +1,33 @@
 /* V2.15 四流工作台：按调研表 11 项「工作」组织系统。
    一行 = 一项工作；四条流是同一工作的四个视图，按步骤横向对齐。 */
 
-const WORK_TABS = ['数据流', '价值流', '工作流', '执行流'];
+const WORK_TABS = ['数据流', '资金流', '工作流', '执行流', '管控流', '价值流', '合规流'];
+const SEVEN_NEW = {1:'资金流',4:'管控流',6:'合规流'};
 
 function switchWorkTab(no, i) { S.filters['workTab_' + no] = i; render(); }
+async function demoSeed() {
+  try { const d = await api('/api/work/demo/seed', 'POST', {}); toast('✓ 已载入 ' + d.载入记录 + ' 条演示数据'); render(); }
+  catch (e) { toast('✗ ' + e.message, 4000); }
+}
+async function demoClear() {
+  if (!confirm('确认清空所有演示数据？（不会删除你自己录入的数据）')) return;
+  try { const d = await api('/api/work/demo/clear', 'POST', {}); toast('✓ 已清空 ' + d.删除演示记录 + ' 条'); render(); }
+  catch (e) { toast('✗ ' + e.message, 4000); }
+}
+function sevenFlowView(seven, name) {
+  if (!seven || !seven.七流 || !seven.七流[name]) return '<div class="card"><p class="muted">七流数据尚未同步，请刷新页面</p></div>';
+  const f = seven.七流[name];
+  return `<div class="card"><h3>${esc(name)}（共 ${f.节点数} 个环节）</h3>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:stretch;margin:12px 0">
+      ${f.节点.map((n,i)=>`<div style="flex:1;min-width:150px;border:1px solid var(--border);border-radius:8px;padding:10px;background:var(--blue-bg)">
+        <div class="muted" style="font-size:11px">第 ${i+1} 环 · ${esc(name)}</div>
+        <b style="font-size:12.5px;line-height:1.5">${esc(n.name)}</b>
+        <div class="muted" style="font-size:11px;margin-top:6px">对应：${esc(n.system_entry||'—')}</div>
+        <button class="btn btn-g btn-sm" style="margin-top:8px" onclick="goPage('${esc(n.system_page||'search')}')">去系统里看 →</button>
+      </div>${i<f.节点.length-1?'<div style="display:flex;align-items:center;color:var(--primary);font-size:18px">→</div>':''}`).join('')}
+    </div>
+    <p class="muted" style="line-height:1.9">${esc(f.原文||'')}</p></div>`;
+}
 function goPage(page) { if (typeof go === 'function') go(page); }
 function workRunId(no) { return parseInt(localStorage.getItem('workRun_' + no) || '0', 10); }
 
@@ -98,6 +122,8 @@ function flowExecView(w) {
 async function workPage(no) {
   const d = await api('/api/work/detail?no=' + no);
   const w = d;
+  let seven = null;
+  try { seven = await api('/api/work/seven/flows?no=' + no); } catch (e) { /* 兼容旧数据 */ }
   // 同步进行中实例的当前步骤，供步骤条高亮
   try {
     const rs = (await api('/api/work/runs')).items || [];
@@ -105,10 +131,12 @@ async function workPage(no) {
     if (run) { localStorage.setItem('workRun_' + no, String(run.id)); localStorage.setItem('workStage_' + no, String(run.stage)); }
     else localStorage.removeItem('workRun_' + no);
   } catch (e) { /* 不影响页面 */ }
-  const tab = Math.min(parseInt(S.filters['workTab_' + no] || '2', 10), 3);  // 默认工作流
+  const tab = Math.min(parseInt(S.filters['workTab_' + no] || '2', 10), 6);  // 默认工作流
   const tabs = `<div style="margin-bottom:12px">${WORK_TABS.map((t, i) =>
     `<button class="btn ${i === tab ? 'btn-p' : 'btn-g'} btn-sm" style="margin-right:6px" onclick="switchWorkTab(${no},${i})">${t}</button>`).join('')}</div>`;
-  const body = [flowDataView, flowValueView, (x) => flowWorkView(x, no), flowExecView][tab](w);
+  const body = SEVEN_NEW[tab]
+    ? sevenFlowView(seven, SEVEN_NEW[tab])
+    : ([flowDataView, null, (x) => flowWorkView(x, no), flowExecView, null, flowValueView, null][tab] || flowDataView)(w);
   return `<div class="page-head"><div><h2>${esc(w.work.subject)}</h2>
     <div class="hint">${esc(w.work.exam_type)} ｜ ${esc(w.work.short_name)} ｜ 四流工作台</div></div>
     <button class="btn btn-g" onclick="goPage('dashboard')">← 我的工作</button></div>
@@ -116,6 +144,23 @@ async function workPage(no) {
     ${tabs}${body}
     <div class="card" style="margin-top:12px"><h3>这项工作的知识范围（调研表子科目）</h3>
       <div class="muted" style="white-space:pre-wrap;line-height:1.9">${esc(w.子科目)}</div></div>`;
+}
+
+async function rolePage() {
+  const d = await api('/api/work/seven/roles');
+  const list = await Promise.all(d.items.map(x => api('/api/work/seven/role?no=' + x.no)));
+  return `<div class="page-head"><div><h2>岗位与能力进阶</h2>
+    <div class="hint">调研表3：5 类岗位 × 七流核心动作 × 初级 / 中级 / 高阶能力梯度</div></div></div>
+    <div class="banner">选一个岗位，看它每天要跑哪七条流、每一步做什么，以及从初级到高阶要补哪些能力。</div>
+    ${list.map((x,i)=>`<div class="card"><h3>${esc(x.岗位.name)}</h3>
+      <div class="muted" style="margin-bottom:8px">典型细分岗位：${esc(x.岗位.posts)}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${d.流名.map(f=>`<span class="tag">${esc(f)} ${(x.七流[f]||[]).length} 项</span>`).join('')}</div>
+      <div class="muted" style="line-height:1.9;white-space:pre-wrap">${esc(x.岗位.knowledge)}</div>
+      <h3 style="margin-top:12px">能力进阶梯度</h3>
+      ${x.能力进阶.map(l=>`<div style="border-left:3px solid var(--primary);padding:8px 10px;margin-bottom:6px;background:var(--blue-bg);border-radius:0 6px 6px 0">
+        <b>${esc(l.级别)}</b><div class="muted" style="font-size:12px">${esc(l.要求)}</div></div>`).join('')}
+      <div style="margin-top:10px">${(x.关联工作||[]).map(w=>`<button class="btn btn-g btn-sm" style="margin:2px" onclick="goPage('work_${w.编号}')">相关工作台：${esc(w.简称)} →</button>`).join('')}</div>
+    </div>`).join('')}</div>`;
 }
 
 /* 首页：我的工作总览 */
@@ -126,6 +171,11 @@ async function workOverview() {
     <div class="hint">按调研表 11 项工作组织：选一项工作 → 看四流 → 按步骤办理</div></div></div>
     <div class="banner">共 <b>${d.工作数}</b> 项工作、<b>${d.工作流步骤}</b> 个流程步骤、<b>${d.执行动作}</b> 个执行动作；
     其中 <b>${d.已支撑步骤}</b> 步已有系统功能，<b>${d.断链步骤}</b> 步待补。${esc(d.提示)}</div>
+    <div class="card"><h3>演示数据（操作演示用）</h3>
+      <div class="muted" style="margin-bottom:10px">一键给各功能页填入示例单据、凭证、合同、审计底稿、税务与工作流实例；演示完可一键清空，不影响你自己录入的数据。</div>
+      <button class="btn btn-p btn-sm" onclick="demoSeed()">载入演示数据</button>
+      <button class="btn btn-g btn-sm" onclick="demoClear()">清空演示数据</button>
+      <button class="btn btn-g btn-sm" onclick="goPage('role_center')">看岗位与能力进阶 →</button></div>
     <div class="grid2">${list.map(x => `<div class="card">
       <h3>${esc(x.short_name)}</h3>
       <div class="muted" style="margin-bottom:8px">${esc(x.subject)} · ${esc(x.exam_type)}</div>
@@ -141,4 +191,5 @@ const _oldDashboard = PAGES.dashboard;
 for (let i = 1; i <= 11; i++) {
   PAGES['work_' + i] = (n => () => workPage(n))(i);
 }
+PAGES.role_center = rolePage;
 PAGES.dashboard = async () => (await workOverview()) + (await _oldDashboard());

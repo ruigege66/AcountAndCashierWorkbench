@@ -9,7 +9,7 @@
 单机可部署的会计 + 出纳一体化系统：**Python 标准库 + SQLite，零第三方依赖**。
 覆盖业务单据 → 审批 → 自动凭证 → 过账 → 日记帐 → 对账 → 期末结账 → 三大报表 → 经营分析与预测的完整链路，内置内控合规（不可变账本、审计哈希链、职责分离）。
 
-> 版本：V2.15 ｜ 前后端分离（原生 JS SPA + REST API）｜ 数据库：SQLite（WAL）｜ 测试：9 套回归 304 项断言 + pre-commit + CI
+> 版本：V2.16 ｜ 前后端分离（原生 JS SPA + REST API）｜ 数据库：SQLite（WAL）｜ 测试：10 套回归 326 项断言 + pre-commit + CI
 
 ---
 
@@ -47,7 +47,7 @@
 
 安全策略**默认只观测不阻断**，可在安全中心开启。
 
-### 税务中心（V2.15，税额与税负率统一两位小数）
+### 税务中心（V2.16，税额与税负率统一两位小数）
 
 增值税销项 / 进项台账（按税率自动分组）、进项认证、增值税申报测算、附加税费（城建 / 教育 / 地方）、
 **税负率两点区间控制**（低于下限提示少缴风险、高于上限提示多缴，百分比两位小数）、
@@ -81,7 +81,7 @@ core/                       领域层（零 SQL、零 HTTP、零反向导入）
 server.py                   HTTP 适配层与核心报表实现
 features.py / analytics_api.py  控制器（瘦）
 public/js/*.js              前端 10 个模块（38 页面 / 42 页面注册）
-tests/ + run_tests.py       9 套回归测试，304 项断言（含一键入口 / pre-commit / CI）
+tests/ + run_tests.py       10 套回归测试，326 项断言（含一键入口 / pre-commit / CI）
 docs/                       用户手册（中 / 英）、需求规格说明书、需求跟踪矩阵
 ```
 
@@ -109,7 +109,7 @@ python server.py            # 浏览器打开 http://127.0.0.1:8765
 
 ```bash
 cd journal-pro
-python run_tests.py             # 一键运行全部 9 套回归（304 项断言，约 10 秒）
+python run_tests.py             # 一键运行全部 10 套回归（326 项断言，约 10 秒）
 python run_tests.py core tax    # 只跑指定套件
 python run_tests.py --fast      # 快速模式（跳过最慢套件）
 run_tests.bat                   # Windows 双击版
@@ -119,7 +119,7 @@ run_tests.bat                   # Windows 双击版
 
 1. **本地提交钩子**：`git config core.hooksPath .githooks` 后每次 `git commit` 自动运行回归，**测试不过不能提交**（已验证拦截有效；确需跳过用 `--no-verify`）；
 2. **CI**：`.github/workflows/ci.yml` 在每次 push / PR 时于 GitHub Actions（Python 3.10 / 3.12 矩阵）自动运行全部回归；
-3. 5 套测试 304 项断言全部基于临时账套，覆盖报表口径、税务两位小数精度、个税累计预扣、架构规则与安全开关。
+3. 5 套测试 326 项断言全部基于临时账套，覆盖报表口径、税务两位小数精度、个税累计预扣、架构规则与安全开关。
 
 详见 [docs/TESTING.md](docs/TESTING.md)（中英双语测试指南）。
 
@@ -144,3 +144,9 @@ run_tests.bat                   # Windows 双击版
 ## 技术栈
 
 Python 3.10+ 标准库（http.server / sqlite3 / ast / json）· 原生 JavaScript SPA · 内联 SVG 图表（零 CDN）· Chart.js（监控大屏，可选）
+
+### 七流工作台与岗位视角（V2.16）
+
+系统按会计调研表组织：**11 项工作 × 7 条流（数据 / 资金 / 工作 / 执行 / 管控 / 价值 / 合规）× 5 类岗位 × 3 级能力进阶**。首页「我的工作」进入任一工作台，七个页签分别展示该条流的节点链、系统入口与法规依据；「岗位与能力进阶」页按岗位给出七流核心动作与成长路径。详见 [三表调研综合分析](journal-pro/docs/三表调研综合分析.md) / [English analysis](journal-pro/docs/Survey_Analysis_EN.md)。
+
+首页提供**一键载入演示数据**（51 条 / 30 张表，覆盖单据、凭证、发票、合同、审计、税务、宏观、工作流），演示完可一键清空，不影响自有数据。

@@ -64,6 +64,6 @@ def start():
                 "app.extensions.legal", "app.extensions.audit_domain",
                 "app.extensions.regulation", "app.extensions.macro",
                 "app.extensions.competency", "app.extensions.advanced_accounting",
-                "app.extensions.workmap"):
+                "app.extensions.workmap", "app.extensions.workmap7", "app.extensions.demo_seed"):
         importlib.import_module(mod)
     return c

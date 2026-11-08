@@ -1,2 +1,16 @@
-[journal-pro] migrations applied: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
-[journal-pro] routes: 311 | serving on 0.0.0.0:8765
+[journal-pro] migrations applied: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
+[journal-pro] routes: 321 | serving on 0.0.0.0:8765
+Traceback (most recent call last):
+  File "D:\日记账\journal-pro\server.py", line 2911, in _dispatch
+    result = fn(conn, mo, body, qs)
+  File "D:\日记账\journal-pro\app\extensions\demo_seed.py", line 212, in seed_api
+    return seed(conn, m, body, qs)
+  File "D:\日记账\journal-pro\app\extensions\demo_seed.py", line 85, in seed
+    vid = add("vouchers", {"voucher_no": no, "voucher_date": t, "period": p,
+        "voucher_type": "转", "summary": summary, "maker": "演示制单员", "status": status,
+        "created_at": t})
+  File "D:\日记账\journal-pro\app\extensions\demo_seed.py", line 56, in add
+    rid = _ins(conn, tbl, data)
+  File "D:\日记账\journal-pro\app\extensions\demo_seed.py", line 17, in _ins
+    cur = conn.execute(f"INSERT INTO {tbl}({cols}) VALUES({ph})", tuple(data.values()))
+sqlite3.IntegrityError: UNIQUE constraint failed: vouchers.voucher_no

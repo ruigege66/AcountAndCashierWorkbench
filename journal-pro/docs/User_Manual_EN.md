@@ -186,3 +186,18 @@ Re-reading the survey by column showed the headers say **"corresponding work"** 
 - Parsed from the workbook: 11 jobs / 64 data nodes / 79 steps / 76 actions. **43 steps are backed by existing functions, 36 are partial or missing** — shown honestly in Chinese labels rather than pretending full coverage.
 
 `tests/test_workmap.py` 14 assertions; 9 suites / 304 assertions total; 12 pages browser-verified.
+
+
+---
+
+## 34. V2.16 Seven Flows, Job Roles & Demo Data (Surveys 2 and 3)
+
+Full analysis: `docs/三表调研综合分析.md` (Chinese) and `docs/Survey_Analysis_EN.md` (English).
+
+- **Survey 2 extends four flows to seven**: fund flow (payment instructions → bank → cash journal → reconciliation → daily funds report), control flow (segregation of duties, tiered approval, multi-level review, physical counts) and compliance flow (43 extracted legal references). Workbenches now have 7 flow tabs, each rendered as a node chain with system entry points.
+- **Survey 3 adds roles and career levels**: 5 role families × 7 flow action lists × junior→mid→senior = 171 role-flow nodes and 15 career requirements; a new "Roles & Career Progression" page.
+- **Four-dimensional model**: 11 jobs × 7 flows × 5 roles × 3 levels.
+- **Control / compliance APIs** map every control point to existing capabilities and list the system checkpoints for each regulation.
+- **Demo data**: one click loads 51 records across 30 tables, all tagged `[演示]` and registered; one-click cleanup deletes by primary key without touching user data or migration defaults.
+
+`tests/test_seven.py` 22 assertions; **10 suites / 326 assertions** pass; migration v17, 321 routes.
