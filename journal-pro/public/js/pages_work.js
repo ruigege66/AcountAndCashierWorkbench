@@ -1,36 +1,10 @@
 /* V2.15 四流工作台：按调研表 11 项「工作」组织系统。
    一行 = 一项工作；四条流是同一工作的四个视图，按步骤横向对齐。 */
 
-const WORK_TABS = ['数据流', '资金流', '工作流', '执行流', '管控流', '价值流', '合规流'];
-const SEVEN_NEW = {1:'资金流',4:'管控流',6:'合规流'};
-
-function switchWorkTab(no, i) { S.filters['workTab_' + no] = i; render(); }
-async function demoSeed() {
-  try { const d = await api('/api/work/demo/seed', 'POST', {}); toast('✓ 已载入 ' + d.载入记录 + ' 条演示数据'); render(); }
-  catch (e) { toast('✗ ' + e.message, 4000); }
-}
-async function demoClear() {
-  if (!confirm('确认清空所有演示数据？（不会删除你自己录入的数据）')) return;
-  try { const d = await api('/api/work/demo/clear', 'POST', {}); toast('✓ 已清空 ' + d.删除演示记录 + ' 条'); render(); }
-  catch (e) { toast('✗ ' + e.message, 4000); }
-}
-function sevenFlowView(seven, name) {
-  if (!seven || !seven.七流 || !seven.七流[name]) return '<div class="card"><p class="muted">七流数据尚未同步，请刷新页面</p></div>';
-  const f = seven.七流[name];
-  return `<div class="card"><h3>${esc(name)}（共 ${f.节点数} 个环节）</h3>
-    <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:stretch;margin:12px 0">
-      ${f.节点.map((n,i)=>`<div style="flex:1;min-width:150px;border:1px solid var(--border);border-radius:8px;padding:10px;background:var(--blue-bg)">
-        <div class="muted" style="font-size:11px">第 ${i+1} 环 · ${esc(name)}</div>
-        <b style="font-size:12.5px;line-height:1.5">${esc(n.name)}</b>
-        <div class="muted" style="font-size:11px;margin-top:6px">对应：${esc(n.system_entry||'—')}</div>
-        <button class="btn btn-g btn-sm" style="margin-top:8px" onclick="goPage('${esc(n.system_page||'search')}')">去系统里看 →</button>
-      </div>${i<f.节点.length-1?'<div style="display:flex;align-items:center;color:var(--primary);font-size:18px">→</div>':''}`).join('')}
-    </div>
-    <p class="muted" style="line-height:1.9">${esc(f.原文||'')}</p></div>`;
-}
-function goPage(page) { if (typeof go === 'function') go(page); }
+/* 工作台 = 「怎么干」导向：办理进度 + 步骤清单 + 每步直达功能。
+   「流」类分析（数据流 / 七流 / 知识图谱）归数据分析菜单，不在工作台内。 */
+/* ---------- 办理状态与交互 ---------- */
 function workRunId(no) { return parseInt(localStorage.getItem('workRun_' + no) || '0', 10); }
-
 async function workStart(no) {
   const d = await api('/api/work/run', 'POST', { no, title: '我的办理', owner: S.actor || '' });
   localStorage.setItem('workRun_' + no, String(d.id));
@@ -52,46 +26,58 @@ async function workReset(no) {
   render();
 }
 
-function flowDataView(w) {
-  const nodes = w.数据流.节点 || [];
-  return `<div class="card"><h3>数据从哪来、经过什么、最后变成什么</h3>
+/* ---------- 七流节点链视图（数据分析 · 七流分析页使用） ---------- */
+function sevenFlowView(seven, name) {
+  if (!seven || !seven.七流 || !seven.七流[name]) return '<div class="card"><p class="muted">七流数据尚未同步，请刷新页面</p></div>';
+  const f = seven.七流[name];
+  return `<div class="card"><h3>${esc(name)}（共 ${f.节点数} 个环节）</h3>
     <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:stretch;margin:12px 0">
-      ${nodes.map((n, i) => `<div style="flex:1;min-width:130px;border:1px solid var(--border);border-radius:8px;padding:10px;background:var(--blue-bg)">
-        <div class="muted" style="font-size:11px">第 ${i + 1} 环</div>
+      ${f.节点.map((n,i)=>`<div style="flex:1;min-width:150px;border:1px solid var(--border);border-radius:8px;padding:10px;background:var(--blue-bg)">
+        <div class="muted" style="font-size:11px">第 ${i+1} 环 · ${esc(name)}</div>
         <b style="font-size:12.5px;line-height:1.5">${esc(n.name)}</b>
-        <div class="muted" style="font-size:11px;margin-top:6px">系统里对应：${esc(n.system_object || '—')}</div>
-      </div>${i < nodes.length - 1 ? '<div style="display:flex;align-items:center;color:var(--primary);font-size:18px">→</div>' : ''}`).join('')}
+        <div class="muted" style="font-size:11px;margin-top:6px">对应：${esc(n.system_entry||'—')}</div>
+        <button class="btn btn-g btn-sm" style="margin-top:8px" onclick="goPage('${esc(n.system_page||'search')}')">去系统里看 →</button>
+      </div>${i<f.节点.length-1?'<div style="display:flex;align-items:center;color:var(--primary);font-size:18px">→</div>':''}`).join('')}
     </div>
-    <p class="muted">${esc(w.数据流.说明 || '')}</p>
-    <button class="btn btn-g btn-sm" onclick="goPage('books')">去查账簿与余额表 →</button>
-    <button class="btn btn-g btn-sm" onclick="goPage('fin')">去看财务报表 →</button></div>`;
+    <p class="muted" style="line-height:1.9">${esc(f.原文||'')}</p></div>`;
 }
 
-function flowValueView(w) {
-  const points = w.价值流.价值点 || [];
-  return `<div class="card"><h3>这项工作为什么要做</h3>
-    <div style="background:var(--blue-bg);border-left:3px solid var(--primary);padding:14px;border-radius:0 8px 8px 0;line-height:1.9">
-      ${esc(w.价值流.主张)}</div>
-    <h3 style="margin-top:16px">带来的具体价值</h3>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">${points.map(p => `<span class="tag t-posted">${esc(p)}</span>`).join('')}</div>
-    <div style="margin-top:16px"><button class="btn btn-g btn-sm" onclick="goPage('analysis')">看经营分析报告 →</button>
-      <button class="btn btn-g btn-sm" onclick="goPage('advanced_center')">看量化模型 →</button>
-      <button class="btn btn-g btn-sm" onclick="goPage('ratios')">看财务比率 →</button></div></div>`;
+/* ---------- 演示数据 ---------- */
+async function demoSeed() {
+  try { const d = await api('/api/work/demo/seed', 'POST', {}); toast('✓ 已载入 ' + d.载入记录 + ' 条演示数据'); render(); }
+  catch (e) { toast('✗ ' + e.message, 4000); }
+}
+async function demoClear() {
+  if (!confirm('确认清空所有演示数据？（不会删除你自己录入的数据）')) return;
+  try { const d = await api('/api/work/demo/clear', 'POST', {}); toast('✓ 已清空 ' + d.删除演示记录 + ' 条'); render(); }
+  catch (e) { toast('✗ ' + e.message, 4000); }
 }
 
-function flowWorkView(w, no) {
+async function workPage(no) {
+  const d = await api('/api/work/detail?no=' + no);
+  const w = d;
+  try {
+    const rs = (await api('/api/work/runs')).items || [];
+    const run = rs.find(x => x.domain_no === no && x.status === '进行中');
+    if (run) { localStorage.setItem('workRun_' + no, String(run.id)); localStorage.setItem('workStage_' + no, String(run.stage)); }
+    else localStorage.removeItem('workRun_' + no);
+  } catch (e) { /* 不影响页面 */ }
   const steps = w.工作流.步骤 || [];
   const rid = workRunId(no);
   const stage = parseInt(localStorage.getItem('workStage_' + no) || '0', 10);
   const cur = rid ? stage : -1;
-  return `<div class="card"><h3>办理进度</h3>
+  return `<div class="page-head"><div><h2>${esc(w.work.subject)}</h2>
+    <div class="hint">${esc(w.work.exam_type)} ｜ 这项工作怎么干：按步骤办，每步直达系统功能</div></div>
+    <button class="btn btn-g" onclick="goPage('dashboard')">← 我的工作</button></div>
+    <div class="banner"><b>这项工作的价值：</b>${esc(w.价值流.主张)}</div>
+    <div class="card"><h3>办理进度</h3>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         ${rid ? `<span class="tag t-posted">正在办理（第 ${Math.min(stage + 1, steps.length)} 步 / 共 ${steps.length} 步）</span>
           <button class="btn btn-p btn-sm" onclick="workNext(${no})">✓ 完成这一步，进入下一步</button>
           <button class="btn btn-g btn-sm" onclick="workReset(${no})">重新开始</button>`
         : `<button class="btn btn-p btn-sm" onclick="workStart(${no})">开始按步骤办理</button>`}
       </div></div>
-    <div class="card"><h3>流程步骤（点「去办理」直接跳到对应功能）</h3>
+    <div class="card"><h3>流程步骤</h3>
     ${steps.map((s, i) => `<div style="border-left:3px solid ${i === cur ? 'var(--primary)' : 'var(--border)'};
         padding:10px 12px;margin-bottom:8px;background:${i === cur ? 'var(--blue-bg)' : 'transparent'};border-radius:0 6px 6px 0">
       <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center">
@@ -99,68 +85,116 @@ function flowWorkView(w, no) {
         <span class="tag ${s.关联覆盖 === '已支撑' ? 't-posted' : s.关联覆盖 === '部分支撑' ? '' : 't-rejected'}">${esc(s.关联覆盖)}</span>
       </div>
       <div class="muted" style="margin-top:6px;line-height:1.8">
-        产生数据：${esc(s.数据流产物)}（${esc(s.数据对象)}）<br>
         要做动作：${esc(s.执行动作)}<br>
-        系统位置：${esc(s.system_entry)}
+        产生数据：${esc(s.数据流产物)}（${esc(s.数据对象)}）
       </div>
       <button class="btn btn-g btn-sm" style="margin-top:8px" onclick="goPage('${esc(s.system_page || 'search')}')">去办理 →</button>
     </div>`).join('')}
-    <p class="muted">${esc(w.工作流.说明 || '')}</p></div>`;
-}
-
-function flowExecView(w) {
-  const acts = w.执行流.动作 || [];
-  return `<div class="card"><h3>具体要做的动作（共 ${acts.length} 项）</h3>
-    <div style="overflow-x:auto"><table><thead><tr><th>序号</th><th>动作</th><th>系统里的功能</th><th>支撑情况</th><th></th></tr></thead><tbody>
-    ${acts.map(a => `<tr><td>${a.seq}</td><td>${esc(a.name)}</td><td>${esc(a.system_entry)}</td>
-      <td><span class="tag ${a.coverage === '已支撑' ? 't-posted' : a.coverage === '部分支撑' ? '' : 't-rejected'}">${esc(a.coverage)}</span></td>
-      <td><button class="btn btn-g btn-sm" onclick="goPage('${esc(a.system_page || 'search')}')">打开</button></td></tr>`).join('')}
-    </tbody></table></div>
-    <p class="muted" style="margin-top:8px">标「待建」的动作目前需人工办理，或列入后续轮次补齐；点「打开」会跳到最接近的现有功能。</p></div>`;
-}
-
-async function workPage(no) {
-  const d = await api('/api/work/detail?no=' + no);
-  const w = d;
-  let seven = null;
-  try { seven = await api('/api/work/seven/flows?no=' + no); } catch (e) { /* 兼容旧数据 */ }
-  // 同步进行中实例的当前步骤，供步骤条高亮
-  try {
-    const rs = (await api('/api/work/runs')).items || [];
-    const run = rs.find(x => x.domain_no === no && x.status === '进行中');
-    if (run) { localStorage.setItem('workRun_' + no, String(run.id)); localStorage.setItem('workStage_' + no, String(run.stage)); }
-    else localStorage.removeItem('workRun_' + no);
-  } catch (e) { /* 不影响页面 */ }
-  const tab = Math.min(parseInt(S.filters['workTab_' + no] || '2', 10), 6);  // 默认工作流
-  const tabs = `<div style="margin-bottom:12px">${WORK_TABS.map((t, i) =>
-    `<button class="btn ${i === tab ? 'btn-p' : 'btn-g'} btn-sm" style="margin-right:6px" onclick="switchWorkTab(${no},${i})">${t}</button>`).join('')}</div>`;
-  const body = SEVEN_NEW[tab]
-    ? sevenFlowView(seven, SEVEN_NEW[tab])
-    : ([flowDataView, null, (x) => flowWorkView(x, no), flowExecView, null, flowValueView, null][tab] || flowDataView)(w);
-  return `<div class="page-head"><div><h2>${esc(w.work.subject)}</h2>
-    <div class="hint">${esc(w.work.exam_type)} ｜ ${esc(w.work.short_name)} ｜ 四流工作台</div></div>
-    <button class="btn btn-g" onclick="goPage('dashboard')">← 我的工作</button></div>
-    <div class="banner"><b>这项工作的价值：</b>${esc(w.价值流.主张)}</div>
-    ${tabs}${body}
+    <p class="muted">${esc(w.工作流.说明 || '')}</p></div>
+    <div class="card"><h3>与这项工作联动的数据分析</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-g btn-sm" onclick="goPage('graph_map')">🕸 知识图谱（节点关系）</button>
+        <button class="btn btn-g btn-sm" onclick="goPage('seven_center')">🌊 七流分析</button>
+        <button class="btn btn-g btn-sm" onclick="goPage('competency_center')">🧭 能力图谱与缺口</button>
+        <button class="btn btn-g btn-sm" onclick="goPage('analysis')">📈 经营分析报告</button>
+      </div>
+      <p class="muted" style="margin-top:8px">这项工作背后的数据关系已录入知识图谱：节点挨着节点，可逐个点开看相邻关系。</p></div>
     <div class="card" style="margin-top:12px"><h3>这项工作的知识范围（调研表子科目）</h3>
       <div class="muted" style="white-space:pre-wrap;line-height:1.9">${esc(w.子科目)}</div></div>`;
 }
 
-async function rolePage() {
-  const d = await api('/api/work/seven/roles');
-  const list = await Promise.all(d.items.map(x => api('/api/work/seven/role?no=' + x.no)));
-  return `<div class="page-head"><div><h2>岗位与能力进阶</h2>
-    <div class="hint">调研表3：5 类岗位 × 七流核心动作 × 初级 / 中级 / 高阶能力梯度</div></div></div>
-    <div class="banner">选一个岗位，看它每天要跑哪七条流、每一步做什么，以及从初级到高阶要补哪些能力。</div>
-    ${list.map((x,i)=>`<div class="card"><h3>${esc(x.岗位.name)}</h3>
-      <div class="muted" style="margin-bottom:8px">典型细分岗位：${esc(x.岗位.posts)}</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${d.流名.map(f=>`<span class="tag">${esc(f)} ${(x.七流[f]||[]).length} 项</span>`).join('')}</div>
-      <div class="muted" style="line-height:1.9;white-space:pre-wrap">${esc(x.岗位.knowledge)}</div>
-      <h3 style="margin-top:12px">能力进阶梯度</h3>
-      ${x.能力进阶.map(l=>`<div style="border-left:3px solid var(--primary);padding:8px 10px;margin-bottom:6px;background:var(--blue-bg);border-radius:0 6px 6px 0">
-        <b>${esc(l.级别)}</b><div class="muted" style="font-size:12px">${esc(l.要求)}</div></div>`).join('')}
-      <div style="margin-top:10px">${(x.关联工作||[]).map(w=>`<button class="btn btn-g btn-sm" style="margin:2px" onclick="goPage('work_${w.编号}')">相关工作台：${esc(w.简称)} →</button>`).join('')}</div>
-    </div>`).join('')}</div>`;
+/* 数据分析 · 知识图谱（图数据库式节点图，节点挨着节点，可逐点探索） */
+async function graphMapPage() {
+  const no = parseInt(S.filters.graphNo || '1', 10);
+  const d = await api('/api/work/graph?no=' + no);
+  const works = (await api('/api/work/works')).items;
+  return graphMapHtml(d, works, no, S.filters.graphSel || '');
+}
+
+function graphNodeDetail(d, nodeId) {
+  const n = (d.nodes || []).find(x => x.id === nodeId);
+  if (!n) return '<div class="empty">点左侧任一节点查看详情</div>';
+  const near = (d.edges || []).filter(e => e.from === nodeId || e.to === nodeId)
+    .map(e => {
+      const other = e.from === nodeId ? e.to : e.from;
+      const on = (d.nodes || []).find(x => x.id === other);
+      return `<div class="muted">↔ ${esc(on ? on.label : other)}（${esc(e.label)}）</div>`;
+    }).join('');
+  return `<h3 style="margin-top:0">${esc(n.label)}</h3>
+    <div class="muted" style="margin-bottom:8px">类型：${esc(n.type)}${n.page ? ' ｜ 页面：' + esc(n.page) : ''}</div>
+    ${n.考试类型 ? '<div class="muted">考试类型：' + esc(n.考试类型) + '</div>' : ''}
+    ${n.价值主张 ? '<p style="line-height:1.8">' + esc(n.价值主张) + '</p>' : ''}
+    ${n.支撑 ? '<div class="tag">' + esc(n.支撑) + '</div>' : ''}
+    ${n.系统对象 ? '<div class="muted">系统对象：' + esc(n.系统对象) + '</div>' : ''}
+    ${n.相关表 ? '<div class="muted">相关数据表：' + esc(n.相关表) + '</div>' : ''}
+    <h3 style="font-size:13px">相邻节点（${(d.edges || []).filter(e => e.from === nodeId || e.to === nodeId).length}）</h3>${near}
+    ${n.page ? `<button class="btn btn-p btn-sm" style="margin-top:10px" onclick="goPage('${esc(n.page)}')">打开对应页面 →</button>` : ''}`;
+}
+
+function graphMapHtml(d, works, no, sel) {
+  const nodes = d.nodes || [], edges = d.edges || [];
+  const selId = sel || '';
+  const cols = [
+    { key: '工作', x: 20, w: 150 },
+    { key: '流程步骤', x: 240, w: 170 },
+    { key: '执行动作', x: 450, w: 170 },
+    { key: '数据对象', x: 660, w: 170 },
+  ];
+  const groups = {};
+  nodes.forEach(n => { (groups[n.type] = groups[n.type] || []).push(n); });
+  const rowH = 40, top = 30;
+  const maxRows = Math.max(...Object.values(groups).map(a => a.length), 1);
+  const H = Math.max(maxRows * rowH + 80, 320);
+  const pos = {};
+  for (const [t, list] of Object.entries(groups)) {
+    const col = cols.find(c => c.key === t) || cols[cols.length - 1];
+    list.forEach((n, i) => { pos[n.id] = { x: col.x, y: top + i * rowH, w: col.w }; });
+  }
+  const isNear = id => !selId || selId === id || (edges || []).some(e =>
+    (e.from === selId && e.to === id) || (e.to === selId && e.from === id));
+  const svg = [`<svg viewBox="0 0 900 ${H}" style="width:100%;height:auto">`];
+  for (const e of edges) {
+    const a = pos[e.from], b = pos[e.to];
+    if (!a || !b) continue;
+    const active = !selId || selId === e.from || selId === e.to;
+    svg.push(`<line x1="${a.x + a.w}" y1="${a.y + 16}" x2="${b.x}" y2="${b.y + 16}" fill="none"
+      stroke="${active ? '#534AB7' : '#C9D2E0'}" stroke-width="${active ? 1.6 : 1}" ${active ? '' : 'opacity=".55"'}/>`);
+  }
+  for (const [nid, p] of Object.entries(pos)) {
+    const n = nodes.find(x => x.id === nid);
+    if (!n) continue;
+    const dim = selId && selId !== nid &&
+      !(edges || []).some(e => (e.from === selId && e.to === nid) || (e.to === selId && e.from === nid));
+    const fill = n.type === '工作' ? '#EDEDFC' : n.type === '流程步骤' ? '#E1F5EE'
+      : n.type === '数据对象' ? '#FAEEDA' : n.type === '执行动作' ? '#FCEBEB' : '#F1EFE8';
+    svg.push(`<g style="cursor:pointer" onclick="S.filters.graphSel='${esc(nid)}';render()">
+      <rect x="${p.x}" y="${p.y}" width="${p.w}" height="32" rx="8" fill="${fill}"
+        stroke="${selId === nid ? '#534AB7' : '#B4B2A9'}" stroke-width="${selId === nid ? 1.6 : 0.6}" ${dim ? 'opacity=".45"' : ''}/>
+      <text x="${p.x + p.w / 2}" y="${p.y + 20}" text-anchor="middle" font-size="11"
+        fill="#2C2C2A">${esc(n.label.length > 14 ? n.label.slice(0, 14) + '…' : n.label)}</text></g>`);
+  }
+  svg.push('</svg>');
+  const detail = selId ? graphNodeDetail(d, selId) : '<div class="empty">点图中任一节点，查看它的相邻节点与详情</div>';
+  return `<div class="page-head"><div><h2>知识图谱 · ${esc(d.center.short)}</h2>
+    <div class="hint">${esc(d.center.subject)} ｜ ${d.统计.节点} 个节点 / ${d.统计.边} 条边；节点挨着节点，点一个看它的相邻关系</div></div></div>
+    <div class="banner"><b>选工作：</b>${works.map(x =>
+      `<button class="btn ${x.no === no ? 'btn-p' : 'btn-g'} btn-sm" style="margin:2px" onclick="S.filters.graphNo='${x.no}';render()">${esc(x.short_name)}</button>`).join('')}</div>
+    <div class="grid2" style="grid-template-columns:2fr 1fr">
+      <div class="card" style="overflow-x:auto">${svg.join('')}</div>
+      <div class="card">${detail}</div></div>
+    <p class="muted">图例：🟪 工作 → 🟩 流程步骤 → 🟨 数据对象（挂相关数据表）→ ⬜ 执行动作。紫色连线是当前选中节点的相邻关系。</p>`;
+}
+
+/* 数据分析 · 七流分析（每条流的节点链与系统入口） */
+async function sevenCenterPage() {
+  const no = parseInt(S.filters.sevenNo || '1', 10);
+  const d = await api('/api/work/seven/flows?no=' + no);
+  const works = (await api('/api/work/works')).items;
+  return `<div class="page-head"><div><h2>七流分析 · ${esc(d.work.short)}</h2>
+    <div class="hint">调研表2：同一项工作的数据流 / 资金流 / 工作流 / 执行流 / 管控流 / 价值流 / 合规流</div></div></div>
+    <div class="banner"><b>选工作：</b>${works.map(x =>
+      `<button class="btn ${x.no === no ? 'btn-p' : 'btn-g'} btn-sm" style="margin:2px" onclick="S.filters.sevenNo='${x.no}';render()">${esc(x.short_name)}</button>`).join('')}</div>
+    ${d.流名.map(name => sevenFlowView(d, name)).join('')}`;
 }
 
 /* 首页：我的工作总览 */
@@ -187,9 +221,29 @@ async function workOverview() {
 }
 
 /* 注册 11 个工作台页 + 替换首页为工作总览（保留原 KPI 在下方） */
+/* 数据分析 · 岗位与能力进阶（调研表3：谁、按什么级别跑） */
+async function rolePage() {
+  const d = await api('/api/work/seven/roles');
+  const list = await Promise.all(d.items.map(x => api('/api/work/seven/role?no=' + x.no)));
+  return `<div class="page-head"><div><h2>岗位与能力进阶</h2>
+    <div class="hint">调研表3：5 类岗位 × 七流核心动作 × 初级 / 中级 / 高阶能力梯度</div></div></div>
+    <div class="banner">选一个岗位，看它每天要跑哪七条流、每一步做什么，以及从初级到高阶要补哪些能力。</div>
+    ${list.map((x)=>`<div class="card"><h3>${esc(x.岗位.name)}</h3>
+      <div class="muted" style="margin-bottom:8px">典型细分岗位：${esc(x.岗位.posts)}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${d.流名.map(f=>`<span class="tag">${esc(f)} ${(x.七流[f]||[]).length} 项</span>`).join('')}</div>
+      <div class="muted" style="line-height:1.9;white-space:pre-wrap">${esc(x.岗位.knowledge)}</div>
+      <h3 style="margin-top:12px">能力进阶梯度</h3>
+      ${x.能力进阶.map(l=>`<div style="border-left:3px solid var(--primary);padding:8px 10px;margin-bottom:6px;background:var(--blue-bg);border-radius:0 6px 6px 0">
+        <b>${esc(l.级别)}</b><div class="muted" style="font-size:12px">${esc(l.要求)}</div></div>`).join('')}
+      <div style="margin-top:10px">${(x.关联工作||[]).map(w=>`<button class="btn btn-g btn-sm" style="margin:2px" onclick="goPage('work_${w.编号}')">相关工作台：${esc(w.简称)} →</button>`).join('')}</div>
+    </div>`).join('')}</div>`;
+}
+
 const _oldDashboard = PAGES.dashboard;
 for (let i = 1; i <= 11; i++) {
   PAGES['work_' + i] = (n => () => workPage(n))(i);
 }
+PAGES.graph_map = graphMapPage;
+PAGES.seven_center = sevenCenterPage;
 PAGES.role_center = rolePage;
 PAGES.dashboard = async () => (await workOverview()) + (await _oldDashboard());

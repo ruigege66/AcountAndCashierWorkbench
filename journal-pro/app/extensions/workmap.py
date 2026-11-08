@@ -172,6 +172,68 @@ def gaps(conn, m, body, qs):
             "说明": "断链 = 该项工作在这一步没有现成系统功能，需人工办理或后续轮次补齐"}
 
 
+
+# ---- 知识图谱（图数据库式：节点 + 邻接边，可按节点探索） ----
+DATA_TABLES = {
+    "单据": ["docs"], "发票": ["invoices"], "合同": ["contracts", "contract_milestones"],
+    "凭证": ["vouchers", "voucher_lines"], "明细账": ["journal"], "总账": ["journal", "voucher_lines"],
+    "科目余额表": ["opening_balances", "voucher_lines"], "财务报表": ["voucher_lines", "subjects"],
+    "指标": ["adv_models"], "测算": ["adv_models"], "预算": ["budgets"], "成本": ["adv_assets", "voucher_lines"],
+    "税": ["tax_filings", "invoices", "tax_input_certs"], "申报": ["tax_filings"],
+    "风险": ["audit_findings"], "证据": ["audit_workpapers"], "底稿": ["audit_workpapers"],
+    "战略": ["macro_indicators"], "宏观": ["macro_indicators"], "绩效": ["payroll_runs", "payroll_lines"],
+    "方案": ["adv_models"], "监管": ["reg_reports", "ecl_stages"], "关联交易": ["related_parties", "journal"],
+    "纠纷": ["legal_cases"], "用印": ["seal_requests"], "合规": ["compliance_duties"],
+}
+
+
+@route("GET", P + r"/graph")
+def graph(conn, m, body, qs):
+    """以某项工作为中心的节点图：工作 → 流程步骤 → 数据对象 → 数据表/页面"""
+    _ensure(conn)
+    no = int((qs.get("no") or ["1"])[0] or 1)
+    d = one(conn, "SELECT * FROM work_domains WHERE no=?", (no,))
+    require(d, "工作不存在")
+    nodes, edges = [], []
+
+    def node(nid, ntype, label, page=None, extra=None):
+        n = {"id": nid, "type": ntype, "label": label}
+        if page:
+            n["page"] = page
+        if extra:
+            n.update(extra)
+        nodes.append(n)
+
+    node("work", "工作", d["subject"], "work_" + str(no),
+         {"考试类型": d["exam_type"], "价值主张": (d["value_text"] or "")[:60] + "…"})
+    steps = q(conn, "SELECT * FROM work_steps WHERE domain_no=? ORDER BY seq", (no,))
+    dn = q(conn, "SELECT * FROM work_data_nodes WHERE domain_no=? ORDER BY seq", (no,))
+    acts = q(conn, "SELECT * FROM work_actions WHERE domain_no=? ORDER BY seq", (no,))
+    for i, s in enumerate(steps, 1):
+        nid = f"step:{i}"
+        node(nid, "流程步骤", s["name"], s["system_page"], {"支撑": s["coverage"]})
+        edges.append({"from": "work", "to": nid, "label": "步骤" + str(i)})
+        dn_row = dn[min(i - 1, len(dn) - 1)] if dn else None
+        if dn_row:
+            did = f"data:{dn_row['seq']}"
+            if not any(x["id"] == did for x in nodes):
+                node(did, "数据对象", dn_row["name"], None,
+                     {"系统对象": dn_row["system_object"] or "—",
+                      "相关表": "、".join(DATA_TABLES.get(next(
+                          (k for k in DATA_TABLES if k in dn_row["name"]), ""), ["—"]))})
+            edges.append({"from": nid, "to": did, "label": "产出"})
+        a = acts[min(i - 1, len(acts) - 1)] if acts else None
+        if a:
+            aid = f"action:{a['seq']}"
+            if not any(x["id"] == aid for x in nodes):
+                node(aid, "执行动作", a["name"], a["system_page"], {"支撑": a["coverage"]})
+            edges.append({"from": nid, "to": aid, "label": "动作"})
+    return {"center": {"no": no, "subject": d["subject"], "short": SHORT[no - 1]},
+            "nodes": nodes, "edges": edges,
+            "统计": {"节点": len(nodes), "边": len(edges)},
+            "说明": "点任一节点可查看详情与相邻节点；工作 → 流程步骤 → 数据对象 → 相关数据表"}
+
+
 @route("POST", P + r"/run")
 def run_start(conn, m, body, qs):
     no = int(body.get("no") or 1)
