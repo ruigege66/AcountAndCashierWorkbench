@@ -299,7 +299,12 @@ function navTreeHtml() {
     ['系统与安全', ['base','system','compliance','risk','audit','monitor','sec_center','arch_audit','help']],
   ];
   const lv = NAV_LEVELS[pos];
-  const groups = pos === 'all' ? GROUPS_ALL : (lv ? lv.groups : GROUPS_ALL);
+  // 两种数据源格式统一成 [标题, 页面数组] 元组：
+  //   GROUPS_ALL 本身就是元组数组；NAV_LEVELS.*.groups 是 {title,pages} 对象数组。
+  // 以前直接 `for (const [title,pages] of 对象数组)` 会抛 "is not iterable"，
+  // 导致整个侧栏动态渲染失败（只剩静态兜底）。
+  const raw = pos === 'all' ? GROUPS_ALL : (lv && Array.isArray(lv.groups) ? lv.groups : GROUPS_ALL);
+  const groups = raw.map(g => Array.isArray(g) ? g : [g.title || '', Array.isArray(g.pages) ? g.pages : []]);
   const rolesHtml = POSITION_ROLES.map(r =>
     `<button data-position="${r.id}" style="display:block;width:100%;text-align:left;${pos === r.id ? 'color:var(--primary);font-weight:500' : 'color:var(--text2)'}" onclick="setPosition('${r.id}')">${r.id === pos ? '● ' : '○ '}${esc(r.name)}</button>`).join('');
   let out = `<div data-navver="V218"></div><details style="border-bottom:1px solid rgba(255,255,255,.08)"><summary style="cursor:pointer;padding:8px 12px;font-size:12px">👤 岗位视角（当前：${esc((POSITION_ROLES.find(r=>r.id===pos)||{}).name||'全部功能')}）</summary><div style="padding:4px 8px">${rolesHtml}</div></details>`;
@@ -367,7 +372,7 @@ async function todayDashboard() {
       tasks.push({ icon: '⚖', label: '合规法规清单', n: c.数量, page: 'seven_center' });
     } catch (e) {}
     try {
-      const cov = await api('/api/competency/coverage');
+      const cov = await api('/api/v28/competency/coverage');
       tasks.push({ icon: '🧭', label: '能力图谱完整度', n: (cov.整体完整度 ?? '—') + '%', page: 'competency_center' });
     } catch (e) {}
   }

@@ -25,6 +25,9 @@ function go(page) {
     graph_map: '知识图谱', seven_center: '七流分析', work_overview: '11 项工作总览' })[page] || '工作台';
   render();
 }
+/* 历史遗留：工作台系列页面用 goPage('xxx')，早期模块用 go('xxx')。
+   两者统一指向同一入口，缺一个就会让整片「去办理 / 进入工作台」按钮失灵。 */
+function goPage(page) { return go(page); }
 document.querySelectorAll('aside button').forEach(b => b.onclick = () => go(b.dataset.page));
 
 function safeChart(id, cfg) {

@@ -90,8 +90,29 @@ def main():
         out = (r.stdout or "") + (r.stderr or "")
         check("  21 个核心页面渲染无 undefined / NaN / 空壳", "不合格页面: 0" in out,
               "；".join(l for l in out.splitlines() if l.startswith("✗")) or "全部通过")
-    else:
-        print("  [--] 未找到 node，跳过动态渲染校验（静态校验已通过即放行）")
+
+        # ④ 按钮失灵专项：所有内联事件调用的函数必须真实存在，且点击后能跳转。
+        #   真实事故：goPage 从未定义 → 13 处「去办理 / 进入工作台」全部点了没反应；
+        #   岗位视角侧栏抛 "is not iterable" → 侧栏动态渲染失败。
+        r = subprocess.run([node, os.path.join(ROOT, "tests", "frontend", "handler_audit.js")],
+                           capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=ROOT)
+        out = (r.stdout or "") + (r.stderr or "")
+        check("  全部按钮处理函数已定义且跳转生效（含四视角侧栏）",
+              r.returncode == 0 and "缺失: （无）" in out and "按钮跳转验证: 成功" in out
+              and "侧栏四视角: 全部正常" in out,
+              "；".join(l.strip() for l in out.splitlines()
+                        if "缺失:" in l or "侧栏四视角:" in l or "跳转验证:" in l or "脚本异常:" in l))
+
+    # ⑤ 前端 api() 路径必须全部有后端路由（离线比对，不依赖服务）。
+    #   真实事故：/api/competency/coverage 少写 /v28 前缀，首页卡片静默失效。
+    r = subprocess.run([sys.executable, os.path.join(ROOT, "tests", "frontend", "api_routes.py")],
+                       capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=ROOT)
+    out = (r.stdout or "") + (r.stderr or "")
+    check("  前端 API 调用全部命中后端路由（无静默 404）", r.returncode == 0 and "无对应后端路由: （无）" in out,
+          "；".join(l.strip() for l in out.splitlines() if l.strip().startswith("✗")) or "全部命中")
+
+    if not node:
+        print("  [--] 未找到 node，动态渲染校验已跳过（静态校验通过即放行）")
 
     print(f"\n通过 {len(PASS)} 项，失败 {len(FAIL)} 项")
     return 0 if not FAIL else 1
