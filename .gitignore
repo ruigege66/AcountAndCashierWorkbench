@@ -8,6 +8,7 @@ journal-pro/data/journal.db
 journal-pro/data/journal.db-*
 journal-pro/data/*.log
 journal-pro/data/report_*.png
+journal-pro/data/_*.png   # 验证截图（本地临时）
 
 # 内置运行时与构建产物（体积大，随迁移包分发）
 journal-pro/runtime/
