@@ -4,7 +4,7 @@ A self-hosted accounting + cashier system covering the full bookkeeping cycle:
 **business documents → approval → automatic vouchers → posting → journals → reconciliation → period close → financial statements → business analytics & forecasting**.
 Built with the **Python standard library + SQLite only — zero third-party dependencies**, with built-in internal controls (immutable ledger, audit hash chain, maker-checker segregation).
 
-> Version: V2.10 ｜ Front-end/back-end separated (vanilla JS SPA + REST API) ｜ Database: SQLite (WAL) ｜ Tests: 5 suites, 203 assertions + pre-commit + CI
+> Version: V2.13 ｜ Front-end/back-end separated (vanilla JS SPA + REST API) ｜ Database: SQLite (WAL) ｜ Tests: 5 suites, 259 assertions + pre-commit + CI
 > 中文文档：[README.md](README.md) ｜ [用户手册.md](journal-pro/docs/用户手册.md)
 
 ---
@@ -43,7 +43,7 @@ Built with the **Python standard library + SQLite only — zero third-party depe
 
 Security policies are **observe-only by default**; enable real blocking in the Security Center.
 
-### Tax Center (V2.10 — all tax amounts & ratios to 2 decimal places)
+### Tax Center (V2.13 — all tax amounts & ratios to 2 decimal places)
 
 Output/input VAT ledgers grouped by inferred rate, input certification, VAT filing simulation (idempotent), surtaxes,
 **two-point tax-burden control** (below floor = underpayment risk, above ceiling = overpayment; percentages to 2dp),
@@ -105,7 +105,7 @@ Database migrations run automatically on first start (versioned via `schema_vers
 
 ```bash
 cd journal-pro
-python run_tests.py             # run all 5 regression suites (203 assertions, ~10s)
+python run_tests.py             # run all 7 regression suites (259 assertions, ~10s)
 python run_tests.py core tax    # selected suites only
 run_tests.bat                   # Windows double-click
 ```
@@ -114,7 +114,7 @@ Quality gates so future changes cannot silently break behavior:
 
 1. **Pre-commit hook**: after `git config core.hooksPath .githooks`, every `git commit` runs the suites — **a failing regression blocks the commit** (verified; escape hatch: `--no-verify`);
 2. **CI**: `.github/workflows/ci.yml` runs all suites on every push / PR (Python 3.10 / 3.12 matrix);
-3. All 203 assertions run against throwaway ledgers. See [docs/TESTING.md](docs/TESTING.md).
+3. All 259 assertions run against throwaway ledgers. See [docs/TESTING.md](docs/TESTING.md).
 
 ## Documentation
 

@@ -146,3 +146,18 @@ Since V2.12, **no workbench shows code or JSON**. Every result is a Chinese tabl
 | Import a bank statement | External Collaboration → Import Statement | Choose bank format → choose file → Import & dedupe |
 
 Note: always enter through the **left-hand menu**. Typing `/api/...` directly in the address bar shows internal machine data, not a user page. Technical health items are translated into plain Chinese and can be ignored in daily bookkeeping.
+
+
+---
+
+## 31. V2.13 Interaction Redesign & Four New Domains
+
+**UX**: each of the 10 workbenches is now split into 3 stage tabs (e.g. Tax Center: Daily Filing / Burden & CIT / Payroll & Config), so only a few cards show at once; four core flows (bulk invoicing, monthly tax, month-end closing, contract management) have step-by-step wizards; a global Chinese search box in the sidebar jumps straight to any function; buttons show "processing" and results show success/failure banners.
+
+**Legal**: contract register with expiry alerts, payment milestones capped at contract value, six-item legal review, dispute cases with expected liability (claim × probability), seal authorization, compliance-duty countdown.
+
+**Internal Audit**: annual plan, workpapers, stratified voucher sampling (large items 100%, mid/low random), findings & overdue remediation, confirmations with book-vs-reply differences, balanced adjustment entries.
+
+**Financial Regulatory Accounting**: regulatory filing register, AML pre-screening (large / round-amount / same-day in-out / off-hours — human review required), related-party concentration, regulatory metrics (liquidity, leverage, concentration, provision), ECL 3-stage provisioning, CSV export. Metrics are management estimates, **not official regulatory submissions**.
+
+**Macroeconomic Accounting**: indicator library (CPI/PPI/GDP/FX/rates), constant-price inflation adjustment, industry benchmarking, three-scenario stress testing, FX revaluation with journal suggestion, macro-financial dashboard with elasticity hints.

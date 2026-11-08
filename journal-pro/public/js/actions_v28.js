@@ -232,6 +232,7 @@ function renderInfoCard(obj, depth = 0) {
 /* 结果主渲染：中文表格 + 信息卡，绝不出现 JSON 源码 */
 function renderV28Result(d) {
   if (d === null || d === undefined) return '<div class="empty">没有返回内容</div>';
+  const okBar = d && d.ok === true ? '<div class="tag t-posted" style="margin-bottom:8px">✓ 操作成功</div>' : '';
   if (typeof d !== 'object') return `<div class="card" style="margin:0">${fmtVal('', d)}</div>`;
   const ARRAY_KEYS = ['items', 'files', 'matrix', 'dimensions', 'modules', 'tiers', 'groups',
     'detail', 'lines', 'batches', 'alerts', 'issues', 'columns', 'calendar', 'capabilities',
@@ -242,7 +243,7 @@ function renderV28Result(d) {
   if (arrayKey) {
     const rows = d[arrayKey];
     html += `<p class="muted" style="margin:0 0 8px">共 ${rows.length} 条记录${rows.length > 30 ? '（显示前 30 条）' : ''}</p>`;
-    html += renderTable(rows);
+    html += `<div style="overflow-x:auto">${renderTable(rows)}</div>`;
     delete rest[arrayKey];
   }
   const other = Object.entries(rest).filter(([k]) => !['ok', 'success'].includes(k));
@@ -251,7 +252,7 @@ function renderV28Result(d) {
   }
   if (!html) html = '<div class="tag t-posted">✓ 操作成功</div>';
   if (d.ok === true && arrayKey === undefined) html = '<div class="tag t-posted" style="margin-bottom:8px">✓ 操作成功</div>' + html;
-  return html;
+  return okBar + html;
 }
 
 function findV28Tool(id) {
@@ -266,10 +267,10 @@ function findV28Tool(id) {
 function collectV28(t, id) {
   const body = {}, qs = [];
   const val = n => { const el = $('f_' + id + '_' + n); return el ? el.value : ''; };
-  const put = (n, v) => {
-    const f = (t.fields || []).find(x => x.n === n);
-    if (f && f.method === 'query') qs.push(encodeURIComponent(n) + '=' + encodeURIComponent(v));
-    else body[n] = v;
+  const put = (n, v, f) => {
+    // GET / 下载类工具的参数一律放地址栏；POST 工具默认放表单，标 query 的字段放地址栏
+    if (method === 'POST' && !(f && f.method === 'query')) body[n] = v;
+    else qs.push(encodeURIComponent(n) + '=' + encodeURIComponent(v));
   };
   for (const f of (t.fields || [])) {
     let v = val(f.n);
@@ -279,7 +280,7 @@ function collectV28(t, id) {
     if (f.type === 'json') {
       try { v = JSON.parse(v); } catch (e) { return { error: '「' + f.l + '」格式不对，请按示例填写' }; }
     }
-    put(f.n, v);
+    put(f.n, v, f);
   }
   // 面额张数 → 结构化对象（用户只填数字）
   if (t.denominations) {
@@ -319,13 +320,52 @@ async function runV28(id) {
   const out = $('out_' + id);
   const query = t.api + (qs.length ? '?' + qs.join('&') : '');
   if (t.download) { window.open(query); toast('✓ 已生成下载文件（浏览器新窗口）'); return; }
-  if (out) out.innerHTML = '<div class="muted">处理中…</div>';
+  const btn = document.querySelector(`#tool_${id} button.btn-p, #tool_${id} button.btn-g`);
+  const oldLabel = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = '处理中…'; }
+  if (out) out.innerHTML = '<div class="muted">正在处理，请稍候…</div>';
   try {
     const d = await api(query, method, method === 'GET' ? undefined : body);
     if (out) out.innerHTML = renderV28Result(d);
     toast('✓ ' + t.title + ' 完成');
   } catch (e) {
-    if (out) out.innerHTML = `<div class="tag t-rejected">✗ ${esc(e.message)}</div>`;
+    if (out) out.innerHTML = `<div class="tag t-rejected" style="display:block;padding:8px">✗ ${esc(e.message)}</div>`;
     toast('✗ ' + e.message, 4000);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = oldLabel; }
   }
+}
+
+/* ---------- 全局中文功能搜索：输入想做的事，直接跳到对应卡片 ---------- */
+function searchV28Tools(text) {
+  const kw = String(text || '').trim().toLowerCase();
+  if (kw.length < 1) return [];
+  const out = [];
+  for (const g in V28_TOOLS) {
+    for (const t of V28_TOOLS[g]) {
+      const hay = (t.title + ' ' + (t.desc || '') + ' ' + (V28_PAGES[g] || '')).toLowerCase();
+      if (hay.includes(kw)) out.push({ group: g, page: V28_PAGES[g], id: t.id, title: t.title, desc: t.desc });
+      if (out.length >= 10) return out;
+    }
+  }
+  return out;
+}
+function showSearchResults(text) {
+  const box = $('searchResults');
+  if (!box) return;
+  const list = searchV28Tools(text);
+  if (!String(text || '').trim()) { box.innerHTML = ''; box.style.display = 'none'; return; }
+  box.style.display = 'block';
+  box.innerHTML = list.length ? list.map(x =>
+    `<div style="padding:7px 10px;border-bottom:1px solid var(--border);cursor:pointer" onclick="jumpToTool('${x.page}','${x.id}')">
+      <b>${esc(x.title)}</b><div class="muted" style="font-size:11px">${esc(x.desc || '')}</div></div>`).join('')
+    : '<div style="padding:10px" class="muted">没找到相关功能，换个词试试（如「开票」「盘点」「审计」）</div>';
+}
+function jumpToTool(page, id) {
+  const box = $('searchResults');
+  if (box) { box.style.display = 'none'; box.innerHTML = ''; }
+  const si = $('globalSearch');
+  if (si) si.value = '';
+  if (typeof go === 'function') go(page);
+  setTimeout(() => gotoTool(id), 350);
 }

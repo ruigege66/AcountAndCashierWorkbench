@@ -60,6 +60,8 @@ def start():
     for mod in ("features", "analytics_api",
                 "app.extensions.accounting", "app.extensions.cashier",
                 "app.extensions.audit", "app.extensions.security", "app.extensions.tax",
-                "app.extensions.gateway"):
+                "app.extensions.gateway",
+                "app.extensions.legal", "app.extensions.audit_domain",
+                "app.extensions.regulation", "app.extensions.macro"):
         importlib.import_module(mod)
     return c

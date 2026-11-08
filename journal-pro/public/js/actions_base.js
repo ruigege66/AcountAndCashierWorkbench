@@ -16,7 +16,8 @@ function go(page) {
     snapshots: '报表快照归档', yearend: '年度结转', stmtimport: '对账单批量导入',
     subjects: '会计科目模板',
     analysis: '在线经营分析报告', rules: '分析规则配置', graph: '功能联动关系',
-    acct_tools: '会计工具箱', cashier_tools: '出纳工作台', tax_center: '税务中心', gateway_center: '开票 / 网银协同',
+    acct_tools: '会计工具箱', cashier_tools: '出纳工作台', tax_center: '税务中心', gateway_center: '开票 / 网银协同', legal_center: '法务管理', audit_center: '内部审计',
+    reg_center: '金融监管会计', macro_center: '宏观经济会计',
     arch_audit: '架构审计中心', sec_center: '安全中心',
     base: '基础资料', system: '系统管理' })[page];
   render();

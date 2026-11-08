@@ -67,6 +67,62 @@ const V28_TOOLS = {
     { id: 'csrf', title: '㉚ 安全令牌', desc: '一次性令牌，开启后校验写请求', api: '/api/v28/security/csrf', fields: [] },
     { id: 'events', title: '㉛ 安全事件日志', desc: '观测与拦截事件', api: '/api/v28/security/events', fields: [] },
   ],
+  legal: [
+    { id: 'lgDash', title: '法务工作台', desc: '合同、付款节点、纠纷、用印与合规义务汇总', api: '/api/v28/legal/dashboard', fields: [] },
+    { id: 'lgContracts', title: '① 合同台账', desc: '到期提醒、已付/未付金额', api: '/api/v28/legal/contracts', fields: [] },
+    { id: 'lgContractAdd', title: '① 登记合同', desc: '编号、名称、金额、起止日、付款条件', api: '/api/v28/legal/contracts', method: 'POST',
+      fields: [{ n: 'contract_no', l: '合同编号', v: '' }, { n: 'title', l: '合同名称', v: '' },
+               { n: 'amount', l: '合同金额', v: '', type: 'number' }, { n: 'counterparty_id', l: '往来单位 ID', v: '', type: 'number' },
+               { n: 'end_date', l: '到期日', v: '' }, { n: 'kind', l: '类型', v: '采购' }] },
+    { id: 'lgMilestone', title: '② 合同付款节点', desc: '分期付款计划与逾期提醒', api: '/api/v28/legal/milestones', fields: [] },
+    { id: 'lgMilestoneAdd', title: '② 登记付款节点', desc: '累计金额不得超过合同总额', api: '/api/v28/legal/milestones', method: 'POST',
+      fields: [{ n: 'contract_id', l: '合同编号', v: '', type: 'number' }, { n: 'due_date', l: '应付日期', v: '' },
+               { n: 'amount', l: '金额', v: '', type: 'number' }] },
+    { id: 'lgReview', title: '③ 法务审查清单', desc: '六项标准审查，未全通过提示暂缓用印', api: '/api/v28/legal/reviews',
+      fields: [{ n: 'contract_id', l: '合同编号', v: '', type: 'number', method: 'query' }] },
+    { id: 'lgCase', title: '④ 纠纷案件与或有负债', desc: '按败诉概率计算预计负债', api: '/api/v28/legal/cases', fields: [] },
+    { id: 'lgSeal', title: '⑤ 用印授权', desc: '用印申请与审批，关联法务审查结果', api: '/api/v28/legal/seals', fields: [] },
+    { id: 'lgDuties', title: '⑥ 合规义务', desc: '工商年报、汇算清缴等截止日倒计时', api: '/api/v28/legal/duties', fields: [] },
+  ],
+  audit_domain: [
+    { id: 'auDash', title: '审计工作台', desc: '计划、底稿、问题整改与函证汇总', api: '/api/v28/audit-domain/dashboard', fields: [] },
+    { id: 'auPlans', title: '① 年度审计计划', desc: '按风险等级安排审计范围', api: '/api/v28/audit-domain/plans', fields: [] },
+    { id: 'auWp', title: '② 工作底稿', desc: '审计程序、样本量与例外记录', api: '/api/v28/audit-domain/workpapers', fields: [] },
+    { id: 'auSample', title: '③ 凭证分层抽样', desc: '大额全查 + 中额/小额分层随机抽样', api: '/api/v28/audit-domain/sampling', method: 'POST',
+      fields: [{ n: 'period', l: '期间', v: thisMonth() }, { n: 'size', l: '样本数', v: '10', type: 'number' }] },
+    { id: 'auFindings', title: '④ 审计发现与整改', desc: '逾期未整改预警、金额影响', api: '/api/v28/audit-domain/findings', fields: [] },
+    { id: 'auConf', title: '⑤ 往来函证', desc: '账面余额、回函金额与差异', api: '/api/v28/audit-domain/confirmations', fields: [] },
+    { id: 'auAdj', title: '⑥ 审计调整分录', desc: '借贷平衡强校验的调整建议', api: '/api/v28/audit-domain/adjustments', fields: [] },
+  ],
+  regulation: [
+    { id: 'rgDash', title: '监管工作台', desc: '报送、反洗钱、关联交易汇总', api: '/api/v28/reg/dashboard', fields: [] },
+    { id: 'rgReports', title: '① 监管报送台账', desc: '报表种类、周期、截止日与逾期', api: '/api/v28/reg/reports', fields: [] },
+    { id: 'rgAml', title: '② 反洗钱扫描', desc: '大额交易、整数金额、快进快出、非营业时段', api: '/api/v28/reg/aml-scan', method: 'POST',
+      fields: [{ n: 'period', l: '期间', v: thisMonth() }], actionLabel: '开始扫描' },
+    { id: 'rgAmlList', title: '② 反洗钱预警清单', desc: '初筛结果，需合规人员人工复核', api: '/api/v28/reg/aml-alerts', fields: [] },
+    { id: 'rgRelated', title: '③ 关联方与关联交易', desc: '关联交易金额与占比', api: '/api/v28/reg/related-parties', fields: [] },
+    { id: 'rgMetrics', title: '④ 监管指标', desc: '流动性、杠杆率、集中度、拨备', api: '/api/v28/reg/metrics',
+      fields: [{ n: 'period', l: '期间', v: thisMonth(), method: 'query' }] },
+    { id: 'rgEcl', title: '⑤ ECL 三阶段拨备', desc: '按应收账龄映射阶段并计提', api: '/api/v28/reg/ecl',
+      fields: [{ n: 'period', l: '期间', v: thisMonth(), method: 'query' }] },
+    { id: 'rgExport', title: '⑥ 导出监管指标', desc: '生成可报送的 CSV 文件', api: '/api/v28/reg/export', download: true, fields: [] },
+  ],
+  macro: [
+    { id: 'mcDash', title: '宏观联动看板', desc: '收入、净利率、情景数与弹性提示', api: '/api/v28/macro/dashboard', fields: [] },
+    { id: 'mcInd', title: '① 宏观指标库', desc: 'CPI / PPI / GDP / 汇率 / 利率按期间录入', api: '/api/v28/macro/indicators', fields: [] },
+    { id: 'mcIndAdd', title: '① 录入宏观指标', desc: '例如 CPI 2.1（单位 %）', api: '/api/v28/macro/indicators', method: 'POST',
+      fields: [{ n: 'period', l: '期间', v: thisMonth() }, { n: 'name', l: '指标名称', v: 'CPI' },
+               { n: 'value', l: '数值', v: '', type: 'number' }, { n: 'unit', l: '单位', v: '%' }] },
+    { id: 'mcInfl', title: '② 通胀调整报表', desc: '按 CPI 折算为不变价，跨年可比', api: '/api/v28/macro/inflation-adjusted',
+      fields: [{ n: 'base_year', l: '基准年度', v: '2026', method: 'query' }] },
+    { id: 'mcBench', title: '③ 行业对标', desc: '录入行业均值并与本公司比较', api: '/api/v28/macro/benchmarks',
+      fields: [{ n: 'year', l: '年度', v: '2026', method: 'query' }] },
+    { id: 'mcStress', title: '④ 宏观情景压力测试', desc: '乐观/基准/悲观下的收入、成本、利率与汇率影响', api: '/api/v28/macro/stress-test',
+      fields: [{ n: 'year', l: '年度', v: '2026', method: 'query' }] },
+    { id: 'mcFx', title: '⑤ 外币敞口重估', desc: '汇率变动产生汇兑损益与分录建议', api: '/api/v28/macro/fx-revaluation', method: 'POST',
+      fields: [{ n: 'exposure', l: '外币敞口', v: '', type: 'number' }, { n: 'old_rate', l: '原汇率', v: '7.10', type: 'number' },
+               { n: 'new_rate', l: '期末汇率', v: '7.20', type: 'number' }] },
+  ],
   gateway: [
     { id: 'gwDash', title: '★ 外部协同工作台', desc: '待开票/待付款/待回传统计与合规流程', api: '/api/v28/gateway/dashboard', fields: [] },
     { id: 'gwCp', title: '① 往来单位开票/收款资料', desc: '税号、发票抬头、地址电话、开户行账号完整度', api: '/api/v28/gateway/counterparties', fields: [] },
@@ -187,6 +243,29 @@ const V28_QUICK = {
   tax: [['taxDash', '税务申报工作台'], ['vatFiling', '增值税测算'], ['taxRatios', '税负率'], ['payrollRun', '算工资个税']],
   gateway: [['gwDash', '外部协同工作台'], ['gwInvSync', '同步待开票'], ['gwInvExp', '导出开票模板'], ['gwPayExp', '导出付款文件']],
 };
+/* 每个工作台按流程阶段分成三个页签，默认只显示当前页签，避免一页堆满卡片 */
+const V28_TAB_NAMES = {
+  acct: ['日常凭证', '期末处理', '台账与检查'],
+  cashier: ['现金与盘点', '资金与预测', '票据与限额'],
+  audit: ['系统体检', '结构分析', '运行监控'],
+  security: ['开关与配置', '账号与权限', '审计与日志'],
+  tax: ['日常申报', '税负与所得税', '工资与配置'],
+  gateway: ['开票协同', '银行协同', '配置与工作台'],
+  legal: ['合同与付款', '审查与纠纷', '用印与合规'],
+  audit_domain: ['计划与底稿', '抽样与发现', '函证与调整'],
+  regulation: ['报送与反洗钱', '关联与指标', '拨备与导出'],
+  macro: ['指标与物价', '对标与情景', '汇率与看板'],
+};
+/* 核心业务流程向导：按步骤引导，点「下一步」跳到对应卡片 */
+const V28_WIZARDS = {
+  gateway: { title: '批量开票四步', steps: [['同步待开票', 'gwInvSync'], ['校验资料', 'gwInvCheck'], ['导出开票模板', 'gwInvExp'], ['登记开票结果', 'gwInvBack']] },
+  acct: { title: '月末处理四步', steps: [['批量过账', 'batchPost'], ['本月摊销', 'accrualRun'], ['多期对比', 'trialCompare'], ['检查缺附件', 'attachments']] },
+  tax: { title: '月度税务四步', steps: [['销项台账', 'outputLedger'], ['进项认证', 'inputCerts'], ['增值税测算', 'vatFiling'], ['税负率', 'taxRatios']] },
+  legal: { title: '合同管理四步', steps: [['登记合同', 'lgContractAdd'], ['付款节点', 'lgMilestoneAdd'], ['法务审查', 'lgReview'], ['用印授权', 'lgSeal']] },
+};
+const V28_PAGES = { acct: 'acct_tools', cashier: 'cashier_tools', audit: 'arch_audit', security: 'sec_center',
+  tax: 'tax_center', gateway: 'gateway_center', legal: 'legal_center', audit_domain: 'audit_center',
+  regulation: 'reg_center', macro: 'macro_center' };
 function gotoTool(id) {
   const el = $('tool_' + id);
   if (!el) return;
@@ -194,16 +273,49 @@ function gotoTool(id) {
   el.style.outline = '2px solid var(--primary)';
   setTimeout(() => { el.style.outline = ''; }, 2200);
 }
+function switchV28Tab(group, i) {
+  S.filters['tab_' + group] = i;
+  render();
+}
+function v28WizardStep(group, delta) {
+  const wz = V28_WIZARDS[group];
+  if (!wz) return;
+  const key = 'wizard_' + group;
+  let cur = parseInt(localStorage.getItem(key) || '0', 10);
+  cur = Math.min(Math.max(cur + delta, 0), wz.steps.length - 1);
+  localStorage.setItem(key, String(cur));
+  render();
+}
 function v28Page(group, title, hint) {
-  const tools = V28_TOOLS[group];
+  const tools = V28_TOOLS[group] || [];
+  const tabNames = V28_TAB_NAMES[group] || ['常用', '更多'];
+  const tab = Math.min(parseInt(S.filters['tab_' + group] || '0', 10), tabNames.length - 1);
+  const per = Math.ceil(tools.length / tabNames.length);
+  const shown = tools.slice(tab * per, (tab + 1) * per);
+  const tabs = tabNames.length > 1 ? `<div class="tabs" style="margin-bottom:12px">${tabNames.map((n, i) =>
+    `<button class="btn ${i === tab ? 'btn-p' : 'btn-g'} btn-sm" style="margin-right:6px" onclick="switchV28Tab('${group}',${i})">${esc(n)}（${tools.slice(i * per, (i + 1) * per).length}）</button>`).join('')}</div>` : '';
+  const wz = V28_WIZARDS[group];
+  let wzHtml = '';
+  if (wz) {
+    const cur = Math.min(parseInt(localStorage.getItem('wizard_' + group) || '0', 10), wz.steps.length - 1);
+    wzHtml = `<div class="card" style="border-left:3px solid var(--primary);margin-bottom:12px">
+      <h3>流程向导 · ${esc(wz.title)}</h3>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin:10px 0">${wz.steps.map((st, i) =>
+        `<button class="btn ${i === cur ? 'btn-p' : 'btn-g'} btn-sm" onclick="localStorage.setItem('wizard_${group}','${i}');render()">${i + 1}. ${esc(st[0])}</button>`).join('')}</div>
+      <div style="display:flex;gap:8px;align-items:center"><button class="btn btn-g btn-sm" onclick="v28WizardStep('${group}',-1)">← 上一步</button>
+      <span class="muted">第 ${cur + 1} / ${wz.steps.length} 步</span>
+      <button class="btn btn-p btn-sm" onclick="gotoTool('${wz.steps[cur][1]}')">去完成这一步 →</button>
+      <button class="btn btn-g btn-sm" onclick="v28WizardStep('${group}',1)">下一步 →</button></div></div>`;
+  }
   const quick = V28_QUICK[group] || [];
   const quickHtml = quick.length ? `<div class="banner"><b>常用操作，点一下直接跳到对应卡片：</b>　${quick.map(([id, label]) =>
     `<button class="btn btn-g btn-sm" style="margin:2px" onclick="gotoTool('${id}')">${esc(label)}</button>`).join('')}</div>` : '';
   return `<div class="page-head"><div><h2>${esc(title)}</h2><div class="hint">${esc(hint)}</div></div>
     <button class="btn btn-g" onclick="render()">🔄 刷新</button></div>
-    <div class="banner"><b>怎么用：</b>在卡片里填好内容 → 点蓝色按钮 → 结果会以<b>中文表格</b>显示在卡片下方，不会看到代码或 JSON；带「下载文件」的按钮会直接生成 Excel 可打开的文件。</div>
-    ${quickHtml}
-    <div class="grid2">${tools.map(v28Card).join('')}</div>`;
+    <div class="banner"><b>怎么用：</b>先选上面的<b>流程阶段</b>页签 → 在卡片里填内容 → 点蓝色按钮 → 结果以<b>中文表格</b>显示在卡片下方。</div>
+    ${tabs}${wzHtml}${quickHtml}
+    <div class="grid2">${shown.map(v28Card).join('')}</div>
+    <p class="muted" style="margin-top:10px">本页签共 ${shown.length} 个操作（全部 ${tools.length} 个，切换页签查看其它阶段）。</p>`;
 }
 
 Object.assign(PAGES, {
@@ -215,6 +327,14 @@ Object.assign(PAGES, {
     'AST 静态扫描 · 代码异味 · 接口清单 · 模块关系一览 · 评分卡 · 系统运行状态'),
   sec_center: async () => v28Page('security', '安全中心',
     '默认只观测不阻断；开启后真实拦截。RBAC / 会话 / 限流 / 输入扫描 / 脱敏 / CSRF'),
+  legal_center: async () => v28Page('legal', '法务管理',
+    '合同台账与付款节点 · 法务审查 · 纠纷与或有负债 · 用印授权 · 合规义务倒计时'),
+  audit_center: async () => v28Page('audit_domain', '内部审计',
+    '年度审计计划 · 工作底稿 · 凭证分层抽样 · 发现整改 · 往来函证 · 调整分录'),
+  reg_center: async () => v28Page('regulation', '金融监管会计',
+    '监管报送 · 反洗钱初筛 · 关联交易 · 监管指标 · ECL 三阶段拨备 · 报送导出'),
+  macro_center: async () => v28Page('macro', '宏观经济会计',
+    '宏观指标库 · 通胀不变价调整 · 行业对标 · 情景压力测试 · 汇率重估 · 联动看板'),
   gateway_center: async () => v28Page('gateway', '外部系统协同',
     '开票与网银合规自动化：批量模板导出 / 结果回传 / 对账单导入 / 直连配置（不做模拟登录，不存凭据）'),
   tax_center: async () => v28Page('tax', '税务中心',

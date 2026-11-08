@@ -9,7 +9,14 @@
 </head>
 <body>
 <div class="layout">
-  <aside>
+  <aside style="position:relative">
+    <div style="padding:10px 12px;border-bottom:1px solid var(--border)">
+      <input id="globalSearch" placeholder="🔍 找功能：开票 / 盘点 / 审计…" oninput="showSearchResults(this.value)"
+        style="width:100%;font-size:12px" autocomplete="off">
+      <div id="searchResults" style="display:none;position:absolute;left:10px;right:10px;top:52px;z-index:99;
+        background:var(--card);border:1px solid var(--border);border-radius:8px;box-shadow:0 6px 20px rgba(20,40,80,.15);
+        max-height:340px;overflow:auto"></div>
+    </div>
     <div class="brand"><h1>📒 会计出纳系统</h1><p>Journal Pro · 全流程核算</p></div>
     <div class="group">
       <div class="group-title">总览</div>
@@ -67,6 +74,13 @@
       <button data-page="cashier_tools">出纳工作台</button>
       <button data-page="arch_audit">架构审计中心</button>
       <button data-page="sec_center">安全中心</button>
+    </div>
+    <div class="group">
+      <div class="group-title">扩展业务 · V2.13</div>
+      <button data-page="legal_center">法务管理</button>
+      <button data-page="audit_center">内部审计</button>
+      <button data-page="reg_center">金融监管会计</button>
+      <button data-page="macro_center">宏观经济会计</button>
     </div>
     <div class="group">
       <div class="group-title">外部协同 · V2.11</div>
