@@ -48,8 +48,78 @@ const statusTag = s => `<span class="tag t-${s}">${({ draft: '草稿', submitted
 const DOC_LABEL = { payment: '付款申请', receipt: '收款单', advance: '备用金借款', reimbursement: '费用报销' };
 
 function destroyCharts() { S.charts.forEach(c => { try { c.destroy(); } catch (e) {} }); S.charts = []; }
+
+/* ---------- 界面主题（晨曦浅色 / 极光深色）与图表联动 ----------
+   图表刻度、图例、网格线由 Chart.js 默认值绘制，不随 CSS 变量变化，
+   因此每次建图前设置默认值、切主题时刷新已有实例，深色下才不会看不清。 */
+function currentTheme() {
+  try {
+    const de = document.documentElement;
+    return (de && de.getAttribute('data-theme')) || 'light';
+  } catch (e) { return 'light'; }
+}
+function _chartPalette() {
+  const dark = currentTheme() === 'dark';
+  return { fg: dark ? '#9FB0CC' : '#5A6785',
+           grid: dark ? 'rgba(255,255,255,.08)' : 'rgba(30,50,90,.08)' };
+}
+function applyChartTheme() {
+  try {
+    if (typeof Chart === 'undefined' || !Chart.defaults) return;   // 测试桩/未加载时不干扰
+    const p = _chartPalette();
+    Chart.defaults.color = p.fg;
+    Chart.defaults.borderColor = p.grid;
+    const labels = Chart.defaults.plugins && Chart.defaults.plugins.legend
+      && Chart.defaults.plugins.legend.labels;
+    if (labels) labels.color = p.fg;
+  } catch (e) {}
+}
+function refreshChartColors() {
+  try {
+    const p = _chartPalette();
+    (S.charts || []).forEach(c => {
+      try {
+        const o = c.options;
+        if (!o) return;
+        if (o.scales) Object.keys(o.scales).forEach(k => {
+          const s = o.scales[k];
+          if (!s) return;
+          if (s.ticks) s.ticks.color = p.fg;
+          if (s.grid) s.grid.color = p.grid;
+          if (s.border) s.border.color = p.grid;
+        });
+        const labels = o.plugins && o.plugins.legend && o.plugins.legend.labels;
+        if (labels) labels.color = p.fg;
+        if (typeof c.update === 'function') c.update('none');
+      } catch (e) {}
+    });
+  } catch (e) {}
+}
+function setTheme(t) {
+  t = t === 'dark' ? 'dark' : 'light';
+  try {
+    if (document.documentElement) document.documentElement.setAttribute('data-theme', t);
+    localStorage.setItem('jp-theme', t);
+    /* 若从 ?theme= 链接进来，同步 URL 参数，刷新后不会跳回旧主题 */
+    if (typeof URLSearchParams !== 'undefined' && new URLSearchParams(location.search).has('theme')) {
+      const u = new URL(location.href);
+      u.searchParams.set('theme', t);
+      history.replaceState(null, '', u.pathname + u.search + u.hash);
+    }
+  } catch (e) {}
+  const b = $('themeToggle');
+  if (b) {
+    b.textContent = t === 'dark' ? '☀' : '☾';
+    b.title = t === 'dark' ? '切换到晨曦浅色' : '切换到极光深色';
+  }
+  applyChartTheme();
+  refreshChartColors();
+}
+function toggleTheme() { setTheme(currentTheme() === 'dark' ? 'light' : 'dark'); }
+
 function chart(id, cfg) {
   if (typeof Chart === 'undefined') { const el = $(id); if (el) el.parentElement.innerHTML = '<div class="empty">图表组件需要联网加载</div>'; return; }
+  applyChartTheme();
   const c = new Chart($(id), cfg); S.charts.push(c); return c;
 }
 function table(rows, cols, emptyText = '暂无数据') {

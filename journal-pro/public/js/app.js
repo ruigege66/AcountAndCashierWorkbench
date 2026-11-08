@@ -1,6 +1,17 @@
 /* 会计出纳系统 · 前端模块（由 public/app.js 按职责拆分，index.html 顺序加载） */
 /* 启动：支持 #页面 深链接（便于收藏与直达，如 /#todo） */
 
+/* 主题按钮图标与当前主题对齐（刷新后不会显示成反的） */
+try {
+  const _tb = document.getElementById('themeToggle');
+  const _de = document.documentElement;
+  const _dark = !!(_de && _de.getAttribute('data-theme') === 'dark');
+  if (_tb) {
+    _tb.textContent = _dark ? '☀' : '☾';
+    _tb.title = _dark ? '切换到晨曦浅色' : '切换到极光深色';
+  }
+} catch (e) {}
+
 /* 地址栏锚点变化 → 渲染对应页面。
    这样即使侧栏的动态渲染出问题，index.html 里的静态入口（<a href="#page">）也点得动。 */
 window.addEventListener('hashchange', function () {

@@ -28,6 +28,11 @@ const ctx = {
   document: {
     getElementById: () => el(), querySelector: () => el(), querySelectorAll: () => [],
     createElement: () => el(), addEventListener() {}, body: el(), head: el(),
+    documentElement: {
+      _theme: 'light',
+      getAttribute(k) { return k === 'data-theme' ? this._theme : null; },
+      setAttribute(k, v) { if (k === 'data-theme') this._theme = v; },
+    },
   },
   navigator: { clipboard: { writeText: async () => {} } },
   alert() {}, confirm: () => true, prompt: () => '',
@@ -124,6 +129,18 @@ try {
 } catch (e) { jump = { error: e.message }; }
 const jumpOK = jump && jump.after === 'work_1' && jump.hash === '#work_1';
 
+// ⑤ 主题切换必须真的翻转 data-theme（否则按钮是摆设、深色皮肤永远看不到）
+let theme = null, themeOK = false;
+try {
+  const before = vm.runInContext('currentTheme()', ctx);
+  vm.runInContext('toggleTheme()', ctx);            // light → dark
+  const after = vm.runInContext('currentTheme()', ctx);
+  vm.runInContext('toggleTheme()', ctx);            // 复原，避免污染后续
+  const restored = vm.runInContext('currentTheme()', ctx);
+  theme = { before, after, restored };
+  themeOK = before === 'light' && after === 'dark' && restored === 'light';
+} catch (e) { theme = { error: e.message }; }
+
 console.log('加载脚本数:', FILES.length);
 console.log('脚本异常:', errors.length ? errors.join(' | ') : '无');
 console.log('内联处理函数:', called.size, '| 缺失:', missing.length ? missing.join(', ') : '（无）');
@@ -132,4 +149,5 @@ console.log('go/goPage 字面量目标:', gotoTargets.size, '| 未注册:', badT
 console.log('PAGES 注册页面数:', pages.length);
 console.log('按钮跳转验证:', jumpOK ? '成功（S.page: ' + jump.before + ' → ' + jump.after + ', hash: ' + jump.hash + '）'
   : '失败 ' + JSON.stringify(jump));
-if (errors.length || missing.length || navErrors.length || badTargets.length || !jumpOK) process.exit(1);
+console.log('主题切换验证:', themeOK ? '成功（light ↔ dark）' : '失败 ' + JSON.stringify(theme));
+if (errors.length || missing.length || navErrors.length || badTargets.length || !jumpOK || !themeOK) process.exit(1);

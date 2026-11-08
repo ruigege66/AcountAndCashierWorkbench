@@ -147,6 +147,20 @@ Since V2.12, **no workbench shows code or JSON**. Every result is a Chinese tabl
 
 Note: always enter through the **left-hand menu**. Typing `/api/...` directly in the address bar shows internal machine data, not a user page. Technical health items are translated into plain Chinese and can be ignored in daily bookkeeping.
 
+### 30.4 Appearance: two light-and-shadow themes
+
+Click the round **☾ / ☀** button in the top-right corner to switch skins. Your choice is stored in the browser and restored on the next visit.
+
+| Theme | Look | Best for |
+|---|---|---|
+| **Aurora Light** (default) | Soft ambient light blooms, frosted-glass cards, top highlight edges, layered soft shadows, glowing gradient buttons, subtle hover lift | Daytime, long data-entry sessions, screen sharing |
+| **Aurora Dark** | Deep ink-blue base with blue-violet / cyan glow, glass cards, glowing active sidebar item | Night use, large displays |
+
+- Open `http://127.0.0.1:8765/?theme=dark` to start in dark mode (handy for bookmarking or demos); the URL stays in sync after switching.
+- Chart ticks and legend labels adapt automatically, so figures stay legible in both skins. **All 65 pages and every button behave identically** — only the appearance changes, nothing to re-learn.
+- The `前端 11-08f` tag in the top-right corner is the front-end build version. If the UI looks wrong or a button does nothing, press **Ctrl+F5** first; an older tag means the browser is using a cached page.
+- Printing automatically hides the sidebar, light blooms and buttons, leaving clean white content.
+
 
 ---
 

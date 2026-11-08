@@ -86,7 +86,7 @@ async function workPage(no) {
       </div>
       <div class="muted" style="margin-top:6px;line-height:1.8">
         ${s.步骤动作 ? `要做动作：${esc(s.步骤动作)}<br>` : ''}
-        产生数据：${esc(s.数据流产物)}（${esc(s.数据对象)}）<br>
+        ${s.数据流产物 && s.数据流产物 !== '—' ? `产生数据：${esc(s.数据流产物)}（${esc(s.数据对象)}）<br>` : ''}
         办理入口：${esc(s.系统功能 || '按右侧按钮搜索功能')}
       </div>
       <button class="btn btn-g btn-sm" style="margin-top:8px" onclick="goPage('${esc(s.system_page || 'search')}')">去办理 →</button>
@@ -271,7 +271,7 @@ const NAV_LEVELS = {
   ]},
 };
 const POSITION_ROLES = [
-  { id: 'all', name: '全部功能（默认）' },
+  { id: 'all', name: '全部功能' },
   { id: 'business', name: '出纳 / 往来会计（业务操作）' },
   { id: 'manager', name: '总账会计 / 税务 / 审计（核算与分析）' },
   { id: 'executive', name: '财务总监 / CFO（决策与监管）' },
@@ -307,7 +307,7 @@ function navTreeHtml() {
   const groups = raw.map(g => Array.isArray(g) ? g : [g.title || '', Array.isArray(g.pages) ? g.pages : []]);
   const rolesHtml = POSITION_ROLES.map(r =>
     `<button data-position="${r.id}" style="display:block;width:100%;text-align:left;${pos === r.id ? 'color:var(--primary);font-weight:500' : 'color:var(--text2)'}" onclick="setPosition('${r.id}')">${r.id === pos ? '● ' : '○ '}${esc(r.name)}</button>`).join('');
-  let out = `<div data-navver="V218"></div><details style="border-bottom:1px solid rgba(255,255,255,.08)"><summary style="cursor:pointer;padding:8px 12px;font-size:12px">👤 岗位视角（当前：${esc((POSITION_ROLES.find(r=>r.id===pos)||{}).name||'全部功能')}）</summary><div style="padding:4px 8px">${rolesHtml}</div></details>`;
+  let out = `<div data-navver="V218"></div><details style="border-bottom:1px solid rgba(255,255,255,.08)"><summary style="cursor:pointer;padding:8px 12px;font-size:12px">👤 岗位视角 · ${esc((POSITION_ROLES.find(r=>r.id===pos)||{}).name||'全部功能')}</summary><div style="padding:4px 8px">${rolesHtml}</div></details>`;
   if (pos !== 'all') {
     out += `<div style="padding:8px 12px;font-size:11.5px;line-height:1.6;color:#F3C969;background:rgba(255,255,255,.05)">
       ⚠ 当前是「岗位视角」，只列本档功能。要看到全部 65 项请点顶部「☰ 全部功能」。</div>`;
@@ -410,9 +410,12 @@ function renderNav() {
 function highlightNav(page) {
   document.querySelectorAll('#navTree button[data-page]').forEach(b => {
     const on = b.dataset.page === page;
-    b.style.background = on ? 'var(--primary-weak, #eef3ff)' : 'transparent';
-    b.style.color = on ? 'var(--primary)' : '';
-    b.style.fontWeight = on ? '500' : '';
+    /* 视觉统一交给 aside button.active（发光渐变），不再写死内联浅色，
+       否则深色侧栏里会出现一条突兀的白底选中项。 */
+    b.classList.toggle('active', on);
+    b.style.background = '';
+    b.style.color = '';
+    b.style.fontWeight = '';
   });
 }
 try { renderNav(); } catch (e) { try { document.getElementById('navTree').innerHTML = '⚠ 侧栏渲染错误: ' + e.message; } catch (_) {} }

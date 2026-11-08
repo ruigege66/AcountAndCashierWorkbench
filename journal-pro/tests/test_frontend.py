@@ -111,6 +111,24 @@ def main():
     check("  前端 API 调用全部命中后端路由（无静默 404）", r.returncode == 0 and "无对应后端路由: （无）" in out,
           "；".join(l.strip() for l in out.splitlines() if l.strip().startswith("✗")) or "全部命中")
 
+    # ⑥ 光影双主题完整性：两套令牌齐备、CSS 括号平衡、切换链路完整
+    css = read(os.path.join(ROOT, "public", "styles.css"))
+    core_js = read(os.path.join(ROOT, "public", "js", "core.js"))
+    app_js = read(os.path.join(ROOT, "public", "js", "app.js"))
+    dark_at = css.find('[data-theme="dark"]')
+    light_block = css[:dark_at] if dark_at > 0 else ""
+    dark_block = css[dark_at:] if dark_at > 0 else ""
+    keys = ("--primary", "--card", "--text", "--bg", "--border", "--sidebar", "--header-bg")
+    vars_ok = dark_at > 0 and all(" " + k + ":" in light_block for k in keys) \
+        and all(" " + k + ":" in dark_block for k in keys) \
+        and css.count("{") == css.count("}")
+    chain_ok = ("themeToggle" in html and "data-theme" in html
+                and all(x in core_js for x in ("function toggleTheme", "function applyChartTheme",
+                                               "function refreshChartColors", "function currentTheme"))
+                and "themeToggle" in app_js and "applyChartTheme()" in core_js)
+    check("  光影双主题令牌齐备、CSS 平衡、切换链路完整", vars_ok and chain_ok,
+          f"令牌={'OK' if vars_ok else '缺失'} / 链路={'OK' if chain_ok else '断裂'} / {len(css)} 字节 CSS")
+
     if not node:
         print("  [--] 未找到 node，动态渲染校验已跳过（静态校验通过即放行）")
 

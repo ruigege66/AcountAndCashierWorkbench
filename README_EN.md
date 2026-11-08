@@ -4,7 +4,7 @@ A self-hosted accounting + cashier system covering the full bookkeeping cycle:
 **business documents → approval → automatic vouchers → posting → journals → reconciliation → period close → financial statements → business analytics & forecasting**.
 Built with the **Python standard library + SQLite only — zero third-party dependencies**, with built-in internal controls (immutable ledger, audit hash chain, maker-checker segregation).
 
-> Version: V2.16 ｜ Front-end/back-end separated (vanilla JS SPA + REST API) ｜ Database: SQLite (WAL) ｜ Tests: 5 suites, 339 assertions + pre-commit + CI
+> Version: V2.16 ｜ Front-end/back-end separated (vanilla JS SPA + REST API) ｜ Database: SQLite (WAL) ｜ Tests: 11 suites, 340 assertions + pre-commit + CI
 > 中文文档：[README.md](README.md) ｜ [用户手册.md](journal-pro/docs/用户手册.md)
 
 ---
@@ -101,11 +101,24 @@ python server.py            # open http://127.0.0.1:8765
 
 Database migrations run automatically on first start (versioned via `schema_version`, currently v11).
 
+## Appearance (two light-and-shadow themes)
+
+Click the round **☾ / ☀** button in the top-right corner to switch skins at any time. The preference is stored in the browser and restored on the next visit:
+
+| Theme | Look | Best for |
+|---|---|---|
+| **Aurora Light** (default) | Soft ambient light blooms, frosted-glass cards, top highlight edges, layered soft shadows, glowing gradient buttons, subtle hover motion | Daytime, long data-entry sessions, screen sharing |
+| **Aurora Dark** | Deep ink-blue base with blue-violet / cyan glow, glass cards, glowing active item | Night use, large displays |
+
+- You can also open `http://127.0.0.1:8765/?theme=dark` directly for the dark skin (handy for bookmarking or demos); the URL stays in sync after switching.
+- Chart ticks and legend labels adapt to the theme automatically. Both skins were verified across all 65 pages — **the features and buttons are identical, only the appearance changes**.
+- `前端 11-08f` in the top-right corner is the front-end build tag. If the UI looks wrong or a button does nothing, press **Ctrl+F5** first; an older tag means the browser is serving a cached page.
+
 ## Tests & Quality Gates
 
 ```bash
 cd journal-pro
-python run_tests.py             # run all 10 regression suites (339 assertions, ~10s)
+python run_tests.py             # run all 11 regression suites (340 assertions, ~10s)
 python run_tests.py core tax    # selected suites only
 run_tests.bat                   # Windows double-click
 ```
@@ -114,7 +127,7 @@ Quality gates so future changes cannot silently break behavior:
 
 1. **Pre-commit hook**: after `git config core.hooksPath .githooks`, every `git commit` runs the suites — **a failing regression blocks the commit** (verified; escape hatch: `--no-verify`);
 2. **CI**: `.github/workflows/ci.yml` runs all suites on every push / PR (Python 3.10 / 3.12 matrix);
-3. All 339 assertions run against throwaway ledgers. See [docs/TESTING.md](docs/TESTING.md).
+3. All 340 assertions run against throwaway ledgers. See [docs/TESTING.md](docs/TESTING.md).
 
 ## Documentation
 

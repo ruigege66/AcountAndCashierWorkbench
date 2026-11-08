@@ -6,6 +6,18 @@
 <title>会计出纳全流程管理系统</title>
 <link rel="stylesheet" href="/styles.css">
 <script src="/js/vendor/chart.umd.min.js"></script>
+<script>
+/* 首屏同步应用主题偏好，避免刷新时先亮后暗的闪烁（偏好仅存本地浏览器） */
+try {
+  var _jpTheme = localStorage.getItem('jp-theme');
+  /* 也支持 ?theme=dark 直接打开深色（便于收藏 / 演示），优先级高于本地偏好 */
+  try {
+    var _q = new URLSearchParams(location.search).get('theme');
+    if (_q === 'dark' || _q === 'light') _jpTheme = _q;
+  } catch (e2) {}
+  document.documentElement.setAttribute('data-theme', _jpTheme === 'dark' ? 'dark' : 'light');
+} catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
+</script>
 </head>
 <body>
 <div class="layout">
@@ -108,7 +120,8 @@
     <header>
       <div class="crumb" id="crumb">工作台</div>
       <div class="right">
-        <span class="build" id="buildTag" title="前端版本：如果这里不是最新日期，说明浏览器用的是旧缓存，请按 Ctrl+F5 强制刷新">前端 11-08e</span>
+        <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="切换到极光深色" aria-label="切换界面主题">☾</button>
+        <span class="build" id="buildTag" title="前端版本：如果这里不是最新日期，说明浏览器用的是旧缓存，请按 Ctrl+F5 强制刷新">前端 11-08f</span>
         <span><span class="dot"></span><span id="dbStatus">数据库连接中…</span></span>
         <span>操作员</span><input id="actor" value="出纳" title="用于审计日志">
       </div>
