@@ -275,6 +275,7 @@ function collectV28(t, id) {
   for (const f of (t.fields || [])) {
     let v = val(f.n);
     if (f.type === 'number') v = parseFloat(v) || 0;
+    if (f.type === 'csvnum') v = String(v).split(/[,，]/).map(x => parseFloat(x.trim())).filter(x => !isNaN(x));
     if (f.type === 'checkbox') v = document.getElementById('f_' + id + '_' + f.n)?.checked ? 'true' : 'false';
     if (f.type === 'file') continue;   // 文件内容单独异步读取
     if (f.type === 'json') {

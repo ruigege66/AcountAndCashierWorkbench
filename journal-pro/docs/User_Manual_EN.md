@@ -161,3 +161,14 @@ Note: always enter through the **left-hand menu**. Typing `/api/...` directly in
 **Financial Regulatory Accounting**: regulatory filing register, AML pre-screening (large / round-amount / same-day in-out / off-hours — human review required), related-party concentration, regulatory metrics (liquidity, leverage, concentration, provision), ECL 3-stage provisioning, CSV export. Metrics are management estimates, **not official regulatory submissions**.
 
 **Macroeconomic Accounting**: indicator library (CPI/PPI/GDP/FX/rates), constant-price inflation adjustment, industry benchmarking, three-scenario stress testing, FX revaluation with journal suggestion, macro-financial dashboard with elasticity hints.
+
+
+---
+
+## 32. V2.14 Four-Flow Requirement Model (from the accounting survey workbook)
+
+See `docs/需求差距与四流分析.md` for the full gap analysis. The survey is not a feature list: it maps 11 accounting competency subjects onto **data flow, value flow, workflow and execution flow**. The system had a solid data chain but many knowledge points lacked decision models, closed-loop workflows and executable actions.
+
+Added: a **Four-Flow Requirement Hub** (11 subjects / 203 knowledge points / full four-flow text, coverage matrix, gap list, flow-trace, applicability rulings, phased roadmap); **14 advanced accounting actions**, **11 quantitative finance models** and **4 closed-loop workflow state machines** (44 new endpoints); two Chinese workbench pages.
+
+**Not completed this round** (phased): consolidated statements & business combinations / financial instruments & fair value; full CPA audit suite; all CPA tax categories; strategy & enterprise risk management; multi-entity group architecture (prerequisite for consolidation and cash pooling).

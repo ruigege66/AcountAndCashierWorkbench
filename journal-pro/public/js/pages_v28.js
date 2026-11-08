@@ -67,6 +67,47 @@ const V28_TOOLS = {
     { id: 'csrf', title: '㉚ 安全令牌', desc: '一次性令牌，开启后校验写请求', api: '/api/v28/security/csrf', fields: [] },
     { id: 'events', title: '㉛ 安全事件日志', desc: '观测与拦截事件', api: '/api/v28/security/events', fields: [] },
   ],
+  competency: [
+    { id: 'cpDash', title: '★ 能力图谱总览', desc: '调研科目、知识点、完整度与分轮计划', api: '/api/v28/competency/dashboard', fields: [] },
+    { id: 'cpSync', title: '同步调研表', desc: '把 11 科目 × 四流 × 知识点完整写入需求图谱', api: '/api/v28/competency/sync', method: 'POST', fields: [], actionLabel: '同步一次' },
+    { id: 'cpDomains', title: '① 11 个科目与四流全文', desc: '数据流 / 价值流 / 工作流 / 执行流原文', api: '/api/v28/competency/domains', fields: [] },
+    { id: 'cpCoverage', title: '② 覆盖度矩阵', desc: '按科目统计已覆盖 / 部分 / 缺失 / 不适用', api: '/api/v28/competency/coverage', fields: [] },
+    { id: 'cpGaps', title: '③ 缺口清单', desc: '所有未贯通的知识点，按优先级排列', api: '/api/v28/competency/gaps', fields: [] },
+    { id: 'cpTrace', title: '④ 四流追溯', desc: '检查每科四流是否齐备、哪里断流', api: '/api/v28/competency/flow-trace', fields: [] },
+    { id: 'cpApp', title: '⑤ 适用性判定', desc: '哪些知识点明确裁剪及原因', api: '/api/v28/competency/applicability', fields: [] },
+    { id: 'cpItems', title: '⑥ 知识点明细', desc: '按科目/状态筛选全部细化条目', api: '/api/v28/competency/items', fields: [] },
+  ],
+  advanced: [
+    { id: 'adDash', title: '★ 高阶核算工作台', desc: '资产台账、模型测算次数与工作流', api: '/api/v28/advanced/dashboard', fields: [] },
+    { id: 'adAssets', title: '① 资产台账', desc: '存货/无形/投资性房地产/长投/租赁资产', api: '/api/v28/advanced/assets', fields: [] },
+    { id: 'adValuation', title: '② 存货计价', desc: '先进先出 / 移动加权平均，自动算发出成本与结存', api: '/api/v28/advanced/inventory/valuation', fields: [{ n: 'item_code', l: '存货编码', v: '', method: 'query' }, { n: 'method', l: '计价方法', v: 'FIFO', method: 'query' }] },
+    { id: 'adWritedown', title: '③ 存货跌价准备', desc: '成本与可变现净值孰低', api: '/api/v28/advanced/inventory/writedown', method: 'POST', fields: [{ n: 'cost', l: '账面成本', v: '', type: 'number' }, { n: 'nrv', l: '可变现净值', v: '', type: 'number' }] },
+    { id: 'adAmort', title: '④ 无形资产摊销', desc: '直线法月摊销与年摊销', api: '/api/v28/advanced/intangible/amortization', method: 'POST', fields: [{ n: 'cost', l: '原值', v: '', type: 'number' }, { n: 'life_months', l: '摊销月数', v: '60', type: 'number' }, { n: 'residual', l: '残值', v: '0', type: 'number' }] },
+    { id: 'adIP', title: '⑤ 投资性房地产', desc: '成本模式折旧 / 公允模式变动', api: '/api/v28/advanced/investment-property', method: 'POST', fields: [{ n: 'cost', l: '成本', v: '', type: 'number' }, { n: 'fair_value', l: '公允价值', v: '', type: 'number' }, { n: 'method', l: '计量模式', v: '成本模式' }] },
+    { id: 'adEquity', title: '⑥ 长期股权投资', desc: '成本法 / 权益法期末账面价值', api: '/api/v28/advanced/equity-method', method: 'POST', fields: [{ n: 'cost', l: '初始成本', v: '', type: 'number' }, { n: 'share', l: '持股比例', v: '0.3', type: 'number' }, { n: 'profit', l: '被投资方净利润', v: '', type: 'number' }, { n: 'dividend', l: '宣告股利', v: '0', type: 'number' }] },
+    { id: 'adDeferred', title: '⑦ 递延所得税', desc: '暂时性差异 → 递延所得税资产/负债', api: '/api/v28/advanced/deferred-tax', method: 'POST', fields: [{ n: 'deductible', l: '可抵扣差异', v: '', type: 'number' }, { n: 'taxable', l: '应纳税差异', v: '', type: 'number' }, { n: 'rate', l: '税率', v: '0.25', type: 'number' }] },
+    { id: 'adLease', title: '⑧ 租赁负债现值', desc: '使用权资产、租赁负债、首月折旧与利息', api: '/api/v28/advanced/lease/calc', method: 'POST', fields: [{ n: 'months', l: '租赁期(月)', v: '36', type: 'number' }, { n: 'payment', l: '每期付款', v: '', type: 'number' }, { n: 'annual_rate', l: '年折现率', v: '0.05', type: 'number' }] },
+    { id: 'adRevenue', title: '⑨ 收入五步法', desc: '按时段/时点与履约进度确认收入', api: '/api/v28/advanced/revenue-five-step', method: 'POST', fields: [{ n: 'amount', l: '合同金额', v: '', type: 'number' }, { n: 'timing', l: '确认方式', v: '时点' }, { n: 'progress', l: '履约进度', v: '1', type: 'number' }] },
+    { id: 'adCorrection', title: '⑩ 前期差错更正 / 日后事项', desc: '追溯重述与调整事项留痕', api: '/api/v28/advanced/correction', method: 'POST', fields: [{ n: 'kind', l: '调整类型', v: '前期差错更正' }, { n: 'amount', l: '调整金额', v: '', type: 'number' }, { n: 'summary', l: '说明', v: '' }] },
+    { id: 'adAdjust', title: '⑪ 调整事项台账', desc: '全部会计调整记录', api: '/api/v28/advanced/adjustments', fields: [] },
+    { id: 'adModels', title: '⑫ 模型测算历史', desc: '所有财务模型输入与结果留痕', api: '/api/v28/advanced/models', fields: [] },
+    { id: 'md_tvm', title: '货币时间价值', desc: '现值 / 终值 / 年金', api: '/api/v28/advanced/model/tvm', method: 'POST', fields: [{ n: "pv", l: "现值", v: "10000", type: "number" }, { n: "rate", l: "利率", v: "0.08", type: "number" }, { n: "periods", l: "期数", v: "5", type: "number" }] },
+    { id: 'md_wacc', title: '加权平均资本成本 WACC', desc: '权益/债务成本与资本结构', api: '/api/v28/advanced/model/wacc', method: 'POST', fields: [{ n: "equity", l: "权益", v: "600000", type: "number" }, { n: "debt", l: "债务", v: "400000", type: "number" }, { n: "cost_equity", l: "权益成本", v: "0.12", type: "number" }, { n: "cost_debt", l: "债务成本", v: "0.06", type: "number" }, { n: "tax_rate", l: "所得税率", v: "0.25", type: "number" }] },
+    { id: 'md_leverage', title: '三大杠杆', desc: '经营 / 财务 / 总杠杆', api: '/api/v28/advanced/model/leverage', method: 'POST', fields: [{ n: "sales", l: "销售额", v: "1000000", type: "number" }, { n: "variable_cost", l: "变动成本", v: "600000", type: "number" }, { n: "fixed_cost", l: "固定成本", v: "200000", type: "number" }, { n: "interest", l: "利息", v: "50000", type: "number" }] },
+    { id: 'md_npv', title: '净现值 NPV', desc: '项目投资决策', api: '/api/v28/advanced/model/npv', method: 'POST', fields: [{ n: "rate", l: "折现率", v: "0.1", type: "number" }, { n: "cashflows", l: "现金流(逗号分隔,首期为负)", v: "-10000", type: "number" }] },
+    { id: 'md_irr', title: '内含报酬率 IRR', desc: '与资本成本比较', api: '/api/v28/advanced/model/irr', method: 'POST', fields: [{ n: "cashflows", l: "现金流(逗号分隔)", v: "-10000", type: "number" }] },
+    { id: 'md_cvp', title: '本量利分析', desc: '盈亏临界点与安全边际', api: '/api/v28/advanced/model/cvp', method: 'POST', fields: [{ n: "price", l: "单价", v: "100", type: "number" }, { n: "unit_variable", l: "单位变动成本", v: "60", type: "number" }, { n: "fixed_cost", l: "固定成本", v: "20000", type: "number" }, { n: "sales_qty", l: "预计销量", v: "1000", type: "number" }] },
+    { id: 'md_variance', title: '标准成本差异', desc: '价格差异 / 效率差异', api: '/api/v28/advanced/model/variance', method: 'POST', fields: [{ n: "actual_price", l: "实际单价", v: "11", type: "number" }, { n: "standard_price", l: "标准单价", v: "10", type: "number" }, { n: "actual_qty", l: "实际用量", v: "1050", type: "number" }, { n: "standard_qty", l: "标准用量", v: "1000", type: "number" }] },
+    { id: 'md_abc', title: '作业成本法 ABC', desc: '按成本动因分摊制造费用', api: '/api/v28/advanced/model/abc', method: 'POST', fields: [{ n: "product_driver_share", l: "本产品动因占比", v: "0.3", type: "number" }] },
+    { id: 'md_dupont', title: '杜邦分析', desc: 'ROE 三因素分解', api: '/api/v28/advanced/model/dupont', method: 'POST', fields: [{ n: "net_profit", l: "净利润", v: "100000", type: "number" }, { n: "revenue", l: "营业收入", v: "1000000", type: "number" }, { n: "assets", l: "总资产", v: "500000", type: "number" }, { n: "equity", l: "净资产", v: "250000", type: "number" }] },
+    { id: 'md_eva', title: '经济增加值 EVA', desc: 'NOPAT − 资本 × WACC', api: '/api/v28/advanced/model/eva', method: 'POST', fields: [{ n: "nopat", l: "税后净营业利润", v: "200000", type: "number" }, { n: "capital", l: "投入资本", v: "1000000", type: "number" }, { n: "wacc", l: "资本成本率", v: "0.1", type: "number" }] },
+    { id: 'md_black_scholes', title: '期权定价', desc: 'Black-Scholes 欧式期权', api: '/api/v28/advanced/model/black-scholes', method: 'POST', fields: [{ n: "spot", l: "标的现价", v: "100", type: "number" }, { n: "strike", l: "行权价", v: "100", type: "number" }, { n: "years", l: "期限(年)", v: "1", type: "number" }, { n: "risk_free", l: "无风险利率", v: "0.05", type: "number" }, { n: "volatility", l: "波动率", v: "0.2", type: "number" }] },
+    { id: 'adWfTpl', title: '⑬ 工作流闭环模板', desc: '全面预算 / 投融资 / 内控风险 / 税务稽查', api: '/api/v28/advanced/workflow/templates', fields: [] },
+    { id: 'adWfCreate', title: '⑭ 发起一条闭环', desc: '选择类型后自动生成全部步骤', api: '/api/v28/advanced/workflow', method: 'POST', fields: [{ n: 'kind', l: '流程类型', v: '全面预算' }, { n: 'title', l: '标题', v: '' }, { n: 'amount', l: '涉及金额', v: '', type: 'number' }] },
+    { id: 'adWfList', title: '⑮ 我的流程', desc: '各实例当前步骤与进度', api: '/api/v28/advanced/workflows', fields: [] },
+    { id: 'adWfStep', title: '⑯ 完成当前步骤', desc: '推进一步，自动进入下一环节直到闭环', api: '/api/v28/advanced/workflow/step', method: 'POST', fields: [{ n: 'workflow_id', l: '流程编号', v: '', type: 'number' }], actionLabel: '完成这一步' },
+    { id: 'adWfOverview', title: '⑰ 闭环总览', desc: '四类流程进行中 / 已完成', api: '/api/v28/advanced/workflow/overview', fields: [] },
+  ],
   legal: [
     { id: 'lgDash', title: '法务工作台', desc: '合同、付款节点、纠纷、用印与合规义务汇总', api: '/api/v28/legal/dashboard', fields: [] },
     { id: 'lgContracts', title: '① 合同台账', desc: '到期提醒、已付/未付金额', api: '/api/v28/legal/contracts', fields: [] },
@@ -255,6 +296,8 @@ const V28_TAB_NAMES = {
   audit_domain: ['计划与底稿', '抽样与发现', '函证与调整'],
   regulation: ['报送与反洗钱', '关联与指标', '拨备与导出'],
   macro: ['指标与物价', '对标与情景', '汇率与看板'],
+  competency: ['需求图谱', '覆盖与缺口', '追溯与裁剪'],
+  advanced: ['高阶准则核算', '财务决策模型', '工作流闭环'],
 };
 /* 核心业务流程向导：按步骤引导，点「下一步」跳到对应卡片 */
 const V28_WIZARDS = {
@@ -265,7 +308,8 @@ const V28_WIZARDS = {
 };
 const V28_PAGES = { acct: 'acct_tools', cashier: 'cashier_tools', audit: 'arch_audit', security: 'sec_center',
   tax: 'tax_center', gateway: 'gateway_center', legal: 'legal_center', audit_domain: 'audit_center',
-  regulation: 'reg_center', macro: 'macro_center' };
+  regulation: 'reg_center', macro: 'macro_center',
+  competency: 'competency_center', advanced: 'advanced_center' };
 function gotoTool(id) {
   const el = $('tool_' + id);
   if (!el) return;
@@ -327,6 +371,10 @@ Object.assign(PAGES, {
     'AST 静态扫描 · 代码异味 · 接口清单 · 模块关系一览 · 评分卡 · 系统运行状态'),
   sec_center: async () => v28Page('security', '安全中心',
     '默认只观测不阻断；开启后真实拦截。RBAC / 会话 / 限流 / 输入扫描 / 脱敏 / CSRF'),
+  competency_center: async () => v28Page('competency', '能力图谱与需求追踪',
+    '会计调研表 11 科目 × 四流（数据流 / 价值流 / 工作流 / 执行流）× 细化知识点；覆盖度、缺口与适用性'),
+  advanced_center: async () => v28Page('advanced', '高阶核算与决策模型',
+    '准则核算执行动作 · 财务管理量化模型 · 四条工作流闭环'),
   legal_center: async () => v28Page('legal', '法务管理',
     '合同台账与付款节点 · 法务审查 · 纠纷与或有负债 · 用印授权 · 合规义务倒计时'),
   audit_center: async () => v28Page('audit_domain', '内部审计',

@@ -62,6 +62,7 @@ def start():
                 "app.extensions.audit", "app.extensions.security", "app.extensions.tax",
                 "app.extensions.gateway",
                 "app.extensions.legal", "app.extensions.audit_domain",
-                "app.extensions.regulation", "app.extensions.macro"):
+                "app.extensions.regulation", "app.extensions.macro",
+                "app.extensions.competency", "app.extensions.advanced_accounting"):
         importlib.import_module(mod)
     return c
