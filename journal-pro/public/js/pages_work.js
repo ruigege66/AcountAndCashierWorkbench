@@ -239,11 +239,141 @@ async function rolePage() {
     </div>`).join('')}</div>`;
 }
 
+
+/* ==================== 岗位分层导航（表3 能力进阶 → 系统分层） ====================
+   业务操作优先：普通财务只见日常操作；分析/监管/战略随岗位层级逐级出现。 */
+const NAV_LEVELS = {
+  business: { name: '初级 · 业务操作（出纳 / 往来会计）', groups: [
+    { title: '今日必办', pages: ['dashboard', 'todo'] },
+    { title: '单据与凭证', pages: ['docs', 'vouchers', 'tpl', 'print', 'vcheck'] },
+    { title: '现金与银行', pages: ['journal', 'daily', 'recon', 'cashier_tools'] },
+    { title: '开票与收付款', pages: ['gateway_center'] },
+    { title: '基础资料', pages: ['subjects', 'base'] },
+  ]},
+  manager: { name: '中级 · 核算与分析（总账 / 税务 / 主管）', groups: [
+    { title: '财务报表与分析', pages: ['fin', 'cfstmt', 'ratios', 'compare', 'partner', 'baddebt'] },
+    { title: '税务管理', pages: ['tax_center'] },
+    { title: '期末与年度', pages: ['periods', 'yearend', 'snapshots'] },
+    { title: '审计与法务配合', pages: ['audit_center', 'legal_center'] },
+    { title: '外部协同管理', pages: ['gateway_center', 'stmtimport', 'office'] },
+  ]},
+  executive: { name: '高阶 · 决策与监管（总监 / CFO）', groups: [
+    { title: '经营决策', pages: ['analysis', 'graph', 'advanced_center'] },
+    { title: '金融监管', pages: ['reg_center'] },
+    { title: '宏观经济', pages: ['macro_center'] },
+    { title: '四流与知识图谱', pages: ['competency_center', 'seven_center', 'graph_map'] },
+    { title: '系统与安全', pages: ['base', 'system', 'sec_center', 'arch_audit', 'help'] },
+  ]},
+};
+const POSITION_ROLES = [
+  { id: 'business', name: '出纳 / 往来会计（业务操作）' },
+  { id: 'manager', name: '总账会计 / 税务 / 审计（核算与分析）' },
+  { id: 'executive', name: '财务总监 / CFO（决策与监管）' },
+];
+function currentPosition() { return localStorage.getItem('position') || 'business'; }
+function setPosition(p) { localStorage.setItem('position', p); render(); }
+
+function navTreeHtml() {
+  const pos = currentPosition();
+  const lv = NAV_LEVELS[pos] || NAV_LEVELS.business;
+  const html = POSITION_ROLES.map(r =>
+    `<button data-position="${r.id}" style="display:block;width:100%;text-align:left;${pos === r.id ? 'color:var(--primary);font-weight:500' : 'color:var(--text2)'}" onclick="setPosition('${r.id}')">${r.id === pos ? '● ' : '○ '}${esc(r.name)}</button>`).join('');
+  let out = `<details open style="border-bottom:1px solid var(--border)"><summary style="cursor:pointer;padding:8px 12px;font-size:12px">👤 当前岗位视角（点击切换）</summary><div style="padding:4px 8px">${html}</div></details>`;
+  for (const g of lv.groups) {
+    const btns = g.pages.map(p => {
+      const label = NAV_LABEL[p] || p;
+      return `<button data-page="${p}" style="display:block;width:100%;text-align:left">${esc(label)}</button>`;
+    }).join('');
+    out += `<details${pos === 'business' && g.title === '今日必办' ? ' open' : ''} style="border-bottom:1px solid var(--border)"><summary style="cursor:pointer;padding:9px 12px;font-size:12.5px;font-weight:500">${esc(g.title)}</summary><div>${btns}</div></details>`;
+  }
+  return out;
+}
+const NAV_LABEL = {
+  dashboard: '今日工作台', docs: '业务单据', invoices: '发票管理', assets: '固定资产', vouchers: '凭证管理',
+  journal: '现金银行日记账', books: '账簿与分析', compliance: '内控合规', office: '导入导出中心',
+  monitor: '监控大屏', risk: '风险预警', audit: '审计中心（哈希链）', help: '帮助中心', partner: '往来账',
+  fin: '财务报表', todo: '我的待办中心', search: '全局搜索', tpl: '常用凭证模板', print: '凭证打印',
+  vcheck: '凭证合规体检', cfstmt: '现金流量表（正表）', ratios: '财务比率分析', compare: '同比环比分析',
+  baddebt: '坏账准备计提', collection: '往来催收清单', snapshots: '报表快照归档', yearend: '年度结转',
+  stmtimport: '对账单批量导入', subjects: '会计科目模板', analysis: '在线经营分析报告', rules: '分析规则配置',
+  graph: '功能联动关系', base: '基础资料', system: '系统管理', role_center: '岗位与能力进阶',
+  advanced_center: '高阶核算与模型', tax_center: '税务中心', gateway_center: '开票 / 网银协同',
+  legal_center: '法务管理', audit_center: '内部审计', reg_center: '金融监管会计',
+  macro_center: '宏观经济会计', arch_audit: '架构审计中心', sec_center: '安全中心',
+  graph_map: '知识图谱', seven_center: '七流分析',
+  work_1: '账务核算', work_2: '财务与预算', work_3: '合同法务（中级）', work_4: '集团与战略财务',
+  work_5: '准则核算', work_6: '审计鉴证', work_7: '成本与估值', work_8: '商事合规',
+  work_9: '全税种管理', work_10: '战略与风控', work_11: '重大项目综合',
+};
+
+/* ==================== 今日工作台（行动导向首页） ==================== */
+async function todayDashboard() {
+  const pos = currentPosition();
+  const tasks = [];
+  try {
+    const t = await api('/api/todo');
+    const n = (t.items || []).filter(x => x.status !== '已完成').length;
+    tasks.push({ icon: '📋', label: '待办事项', n, page: 'todo' });
+  } catch (e) {}
+  try {
+    const w = (await api('/api/work/runs')).items || [];
+    const n = w.filter(x => x.status === '进行中').length;
+    tasks.push({ icon: '🧭', label: '进行中的工作流', n, page: 'dashboard' });
+  } catch (e) {}
+  try {
+    const d = await api('/api/work/demo/status');
+    tasks.push({ icon: '🎬', label: d.已载入 ? '演示数据已载入（' + d.记录数 + ' 条，可清空）' : '演示数据未载入', n: d.记录数, page: 'dashboard', demo: true });
+  } catch (e) {}
+  if (pos !== 'business') {
+    try {
+      const g = await api('/api/work/gaps');
+      tasks.push({ icon: '🕸', label: '四流断链（待补功能）', n: g.步骤数 + g.动作数, page: 'graph_map' });
+    } catch (e) {}
+    try {
+      const a = await api('/api/work/seven/controls');
+      tasks.push({ icon: '🛡', label: '管控流检查点', n: a.总数, page: 'seven_center' });
+    } catch (e) {}
+    try {
+      const c = await api('/api/work/seven/compliance');
+      tasks.push({ icon: '⚖', label: '合规法规清单', n: c.数量, page: 'seven_center' });
+    } catch (e) {}
+    try {
+      const cov = await api('/api/competency/coverage');
+      tasks.push({ icon: '🧭', label: '能力图谱完整度', n: cov.整体完整度 + '%', page: 'competency_center' });
+    } catch (e) {}
+  }
+  return `<div class="card"><h3>今日待我处理</h3>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">${tasks.map(x =>
+      `<div style="flex:1;min-width:160px;border:1px solid var(--border);border-radius:8px;padding:12px;cursor:pointer" onclick="goPage('${x.page}')">
+        <div style="font-size:20px">${x.icon}</div>
+        <b style="font-size:13px">${esc(x.label)}</b>
+        <div style="font-size:22px;color:var(--primary);margin-top:4px">${x.n}</div></div>`).join('')}</div></div>`;
+}
+
+/* 侧栏按岗位渲染（表3 能力进阶 → 系统分层），go() 跳转时同步高亮 */
+function renderNav() {
+  const el = $('navTree');
+  if (!el) return;
+  const pos = currentPosition();
+  const lv = NAV_LEVELS[pos] || NAV_LEVELS.business;
+  const roles = POSITION_ROLES.map(r =>
+    `<button data-position="${r.id}" style="display:block;width:100%;text-align:left;${pos === r.id ? 'color:var(--primary);font-weight:500' : 'color:var(--text2)'}" onclick="setPosition('${r.id}')">${r.id === pos ? '● ' : '○ '}${esc(r.name)}</button>`).join('');
+  let out = `<details open style="border-bottom:1px solid var(--border)"><summary style="cursor:pointer;padding:8px 12px;font-size:12px">👤 当前岗位视角</summary><div style="padding:4px 8px">${roles}</div></details>`;
+  for (const g of lv.groups) {
+    const btns = g.pages.map(p => `<button data-page="${p}" style="display:block;width:100%;text-align:left">${esc(NAV_LABEL[p] || p)}</button>`).join('');
+    out += `<details${pos === 'business' && g.title === '今日必办' ? ' open' : ''} style="border-bottom:1px solid var(--border)"><summary style="cursor:pointer;padding:9px 12px;font-size:12.5px;font-weight:500">${esc(g.title)}</summary><div>${btns}</div></details>`;
+  }
+  el.innerHTML = out;
+}
+renderNav();
+
 const _oldDashboard = PAGES.dashboard;
+
 for (let i = 1; i <= 11; i++) {
   PAGES['work_' + i] = (n => () => workPage(n))(i);
 }
 PAGES.graph_map = graphMapPage;
 PAGES.seven_center = sevenCenterPage;
 PAGES.role_center = rolePage;
-PAGES.dashboard = async () => (await workOverview()) + (await _oldDashboard());
+PAGES.work_overview = workOverview;
+PAGES.dashboard = async () => (await todayDashboard()) + '<div style="margin-top:14px">' + (await _oldDashboard()) + '</div>';
