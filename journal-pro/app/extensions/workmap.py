@@ -131,6 +131,30 @@ def works(conn, m, body, qs):
     return {"items": rows, "总数": len(rows)}
 
 
+# 这些步骤在调研表的执行流里没有对应动作，靠字面重合会误配（如 成本核算 → 测算资本成本），
+# 宁可留空由前端显示「按系统入口办理」，也不显示一个错的动作。
+NO_ACTION_STEPS = {"方案评审", "成本核算", "成本管控"}
+
+
+def _chars(text):
+    return {c for c in re.sub(r"[\s（）()/、，,·\-—]", "", text or "")}
+
+
+def _best_action(step_name, actions):
+    """按用字重合度给步骤挑最贴近的执行动作；重合字少于 2 个就认为没有对应动作。"""
+    if (step_name or "").strip() in NO_ACTION_STEPS:
+        return ""
+    cs = _chars(step_name)
+    if not cs:
+        return ""
+    best, best_score = "", 0
+    for a in actions:
+        score = len(cs & _chars(a["name"]))
+        if score > best_score:
+            best, best_score = a["name"], score
+    return best if best_score >= 2 else ""
+
+
 @route("GET", P + r"/detail")
 def detail(conn, m, body, qs):
     _ensure(conn)
@@ -148,6 +172,10 @@ def detail(conn, m, body, qs):
         s["动作入口"] = actions[min(i, len(actions) - 1)]["system_page"] if actions else "search"
         s["系统入口"] = s["system_page"] or "search"
         s["系统功能"] = s["system_entry"]
+        # 调研表的「工作流步数」与「执行流动作数」并不等长（如 8 步 / 7 动作），
+        # 顺序硬配会出现「业务单据收集 → 编制会计分录」这类错配；按名称重合度再校一次，
+        # 匹配不上就留空，前端改为只显示系统入口，不硬塞一个不相干的动作。
+        s["步骤动作"] = _best_action(s["name"], actions)
         # 该步骤的动作覆盖情况取步骤与动作中较差者
         acov = actions[min(i, len(actions) - 1)]["coverage"] if actions else "待建"
         s["关联覆盖"] = "待建" if "待建" in (s["coverage"], acov) else ("部分支撑" if "部分" in (s["coverage"], acov) else "已支撑")

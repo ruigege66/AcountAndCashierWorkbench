@@ -66,7 +66,7 @@ async function workPage(no) {
   const rid = workRunId(no);
   const stage = parseInt(localStorage.getItem('workStage_' + no) || '0', 10);
   const cur = rid ? stage : -1;
-  return `<div class="page-head"><div><h2>${esc(w.work.subject)}</h2>
+  return `<div class="page-head"><div><h2>${esc(w.work.short_name)} · ${esc(w.work.subject)}</h2>
     <div class="hint">${esc(w.work.exam_type)} ｜ 这项工作怎么干：按步骤办，每步直达系统功能</div></div>
     <button class="btn btn-g" onclick="goPage('dashboard')">← 我的工作</button></div>
     <div class="banner"><b>这项工作的价值：</b>${esc(w.价值流.主张)}</div>
@@ -85,12 +85,17 @@ async function workPage(no) {
         <span class="tag ${s.关联覆盖 === '已支撑' ? 't-posted' : s.关联覆盖 === '部分支撑' ? '' : 't-rejected'}">${esc(s.关联覆盖)}</span>
       </div>
       <div class="muted" style="margin-top:6px;line-height:1.8">
-        要做动作：${esc(s.执行动作)}<br>
-        产生数据：${esc(s.数据流产物)}（${esc(s.数据对象)}）
+        ${s.步骤动作 ? `要做动作：${esc(s.步骤动作)}<br>` : ''}
+        产生数据：${esc(s.数据流产物)}（${esc(s.数据对象)}）<br>
+        办理入口：${esc(s.系统功能 || '按右侧按钮搜索功能')}
       </div>
       <button class="btn btn-g btn-sm" style="margin-top:8px" onclick="goPage('${esc(s.system_page || 'search')}')">去办理 →</button>
     </div>`).join('')}
     <p class="muted">${esc(w.工作流.说明 || '')}</p></div>
+    <div class="card"><h3>本工作的关键动作（执行流）</h3>
+      <div class="muted" style="margin-bottom:8px">调研表里这项工作的落点动作，点一下直接进对应功能：</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">${(w.执行流.动作 || []).map(a =>
+        `<button class="btn btn-g btn-sm" onclick="goPage('${esc(a.system_page || 'search')}')">${esc(a.name)}</button>`).join('')}</div></div>
     <div class="card"><h3>与这项工作联动的数据分析</h3>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-g btn-sm" onclick="goPage('graph_map')">🕸 知识图谱（节点关系）</button>
@@ -272,19 +277,19 @@ const POSITION_ROLES = [
   { id: 'executive', name: '财务总监 / CFO（决策与监管）' },
 ];
 function currentPosition() { return localStorage.getItem('position') || 'all'; }
-function setPosition(p) { localStorage.setItem('position', p); render(); }
+function setPosition(p) { localStorage.setItem('position', p); renderNav(); render(); }
 
 function navTreeHtml() {
   const pos = currentPosition() || 'all';
   // 全部功能模式：8 个大功能 → 全部小功能；岗位模式：只显示该档
   const GROUPS_ALL = [
-    ['工作台 · 11 项工作', ['dashboard','work_1','work_2','work_3','work_4','work_5','work_6','work_7','work_8','work_9','work_10','work_11']],
-    ['财务核算', ['docs','invoices','assets','vouchers','journal','books','fin','cfstmt','ratios','compare','daily','recon','periods','baddebt','yearend','collection','partner','subjects']],
+    ['工作台 · 11 项工作', ['dashboard','work_overview','work_1','work_2','work_3','work_4','work_5','work_6','work_7','work_8','work_9','work_10','work_11']],
+    ['财务核算', ['docs','invoices','assets','vouchers','journal','books','fin','cfstmt','reports','ratios','compare','daily','recon','periods','baddebt','yearend','snapshots','collection','partner','subjects']],
     ['税务管理', ['tax_center']],
-    ['数据分析', ['analysis','graph','graph_map','seven_center','competency_center','advanced_center','rules','macro_center']],
+    ['数据分析', ['analysis','graph','graph_map','seven_center','competency_center','role_center','advanced_center','rules','macro_center']],
     ['法务 · 审计 · 监管', ['legal_center','audit_center','reg_center']],
     ['外部协同', ['gateway_center','stmtimport','office']],
-    ['效率工具', ['todo','search','tpl','print','vcheck']],
+    ['效率工具', ['acct_tools','cashier_tools','todo','search','tpl','print','vcheck']],
     ['系统与安全', ['base','system','compliance','risk','audit','monitor','sec_center','arch_audit','help']],
   ];
   const lv = NAV_LEVELS[pos];
@@ -312,6 +317,7 @@ const NAV_LABEL = {
   legal_center: '法务管理', audit_center: '内部审计', reg_center: '金融监管会计',
   macro_center: '宏观经济会计', arch_audit: '架构审计中心', sec_center: '安全中心',
   graph_map: '知识图谱', seven_center: '七流分析',
+  reports: '报表中心', acct_tools: '会计工具箱', cashier_tools: '出纳工作台', work_overview: '11 项工作总览',
   work_1: '账务核算', work_2: '财务与预算', work_3: '合同法务（中级）', work_4: '集团与战略财务',
   work_5: '准则核算', work_6: '审计鉴证', work_7: '成本与估值', work_8: '商事合规',
   work_9: '全税种管理', work_10: '战略与风控', work_11: '重大项目综合',
@@ -361,21 +367,35 @@ async function todayDashboard() {
         <div style="font-size:22px;color:var(--primary);margin-top:4px">${x.n}</div></div>`).join('')}</div></div>`;
 }
 
-/* 侧栏按岗位渲染（表3 能力进阶 → 系统分层），go() 跳转时同步高亮 */
+/* 侧栏渲染：单一数据源 = navTreeHtml()（默认「全部功能」8 大分组，岗位视角可选）
+   侧栏是动态生成的，因此点击用事件委托绑定，不可在脚本加载时一次性绑定。 */
 function renderNav() {
   const el = $('navTree');
   if (!el) return;
-  const pos = currentPosition();
-  const lv = NAV_LEVELS[pos] || NAV_LEVELS.business;
-  const roles = POSITION_ROLES.map(r =>
-    `<button data-position="${r.id}" style="display:block;width:100%;text-align:left;${pos === r.id ? 'color:var(--primary);font-weight:500' : 'color:var(--text2)'}" onclick="setPosition('${r.id}')">${r.id === pos ? '● ' : '○ '}${esc(r.name)}</button>`).join('');
-  let out = `<details open style="border-bottom:1px solid var(--border)"><summary style="cursor:pointer;padding:8px 12px;font-size:12px">👤 当前岗位视角</summary><div style="padding:4px 8px">${roles}</div></details>`;
-  for (const g of lv.groups) {
-    const btns = g.pages.map(p => `<button data-page="${p}" style="display:block;width:100%;text-align:left">${esc(NAV_LABEL[p] || p)}</button>`).join('');
-    out += `<details${pos === 'business' && g.title === '今日必办' ? ' open' : ''} style="border-bottom:1px solid var(--border)"><summary style="cursor:pointer;padding:9px 12px;font-size:12.5px;font-weight:500">${esc(g.title)}</summary><div>${btns}</div></details>`;
+  try {
+    el.innerHTML = navTreeHtml();
+  } catch (e) {
+    el.innerHTML = '<div style="padding:12px;font-size:12px;color:#b42318">⚠ 侧栏渲染出错：' + esc(e.message) + '</div>';
+    return;
   }
-  el.innerHTML = out;
-}try { renderNav(); } catch (e) { document.getElementById('navTree').innerHTML = '⚠ 侧栏渲染错误: ' + e.message; }
+  el.onclick = function (e) {
+    let n = e.target;
+    while (n && n !== el && !(n.dataset && (n.dataset.page || n.dataset.position))) n = n.parentNode;
+    if (!n || n === el || !n.dataset) return;
+    if (n.dataset.position) { setPosition(n.dataset.position); return; }
+    if (n.dataset.page) go(n.dataset.page);
+  };
+  try { if (S && S.page) highlightNav(S.page); } catch (e) {}
+}
+function highlightNav(page) {
+  document.querySelectorAll('#navTree button[data-page]').forEach(b => {
+    const on = b.dataset.page === page;
+    b.style.background = on ? 'var(--primary-weak, #eef3ff)' : 'transparent';
+    b.style.color = on ? 'var(--primary)' : '';
+    b.style.fontWeight = on ? '500' : '';
+  });
+}
+try { renderNav(); } catch (e) { try { document.getElementById('navTree').innerHTML = '⚠ 侧栏渲染错误: ' + e.message; } catch (_) {} }
 
 const _oldDashboard = PAGES.dashboard;
 

@@ -1,6 +1,11 @@
 const fs=require('fs'),vm=require('vm');
+const path = require('path');
+const ROOT = path.dirname(path.dirname(__dirname));       // journal-pro
+function read(rel) { return require('fs').readFileSync(path.join(ROOT, rel), 'utf8'); }
+function samples() { return JSON.parse(read('tests/frontend/api_samples.json')); }
+
 (async()=>{
-const REAL=JSON.parse(fs.readFileSync('data/_api_samples.json','utf8'));
+const REAL=JSON.parse(read('tests/frontend/api_samples.json'));
 const ctx={PAGES:{dashboard:async()=>'x'},console,localStorage:{getItem:()=>null,setItem:()=>{},removeItem:()=>{}},
   S:{filters:{},actor:''},
   api:async(u)=>{const base=u.split('?')[0]; for(const k in REAL){ if(k.startsWith(base+'|')||k===base) return REAL[k]; } return {};},
@@ -10,8 +15,8 @@ const ctx={PAGES:{dashboard:async()=>'x'},console,localStorage:{getItem:()=>null
   go:()=>{},setTimeout:()=>0,window:{open:()=>{}},Chart:function(){},destroyCharts:()=>{},
   fetch:async(u)=>({ok:true,json:async()=>({})})};
 vm.createContext(ctx);
-vm.runInContext(fs.readFileSync('public/js/pages_work.js','utf8'),ctx);
-vm.runInContext(fs.readFileSync('public/js/pages_v28.js','utf8'),ctx);
+vm.runInContext(read('public/js/pages_work.js'),ctx);
+vm.runInContext(read('public/js/pages_v28.js'),ctx);
 const pages=['dashboard','work_1','work_2','work_3','work_4','work_5','work_6','work_7','work_8','work_9','work_10','work_11',
   'graph_map','seven_center','role_center','competency_center','advanced_center','legal_center','audit_center','reg_center','macro_center'];
 let bad=0;

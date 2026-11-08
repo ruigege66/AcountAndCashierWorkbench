@@ -4,7 +4,7 @@ A self-hosted accounting + cashier system covering the full bookkeeping cycle:
 **business documents → approval → automatic vouchers → posting → journals → reconciliation → period close → financial statements → business analytics & forecasting**.
 Built with the **Python standard library + SQLite only — zero third-party dependencies**, with built-in internal controls (immutable ledger, audit hash chain, maker-checker segregation).
 
-> Version: V2.16 ｜ Front-end/back-end separated (vanilla JS SPA + REST API) ｜ Database: SQLite (WAL) ｜ Tests: 5 suites, 326 assertions + pre-commit + CI
+> Version: V2.16 ｜ Front-end/back-end separated (vanilla JS SPA + REST API) ｜ Database: SQLite (WAL) ｜ Tests: 5 suites, 335 assertions + pre-commit + CI
 > 中文文档：[README.md](README.md) ｜ [用户手册.md](journal-pro/docs/用户手册.md)
 
 ---
@@ -105,7 +105,7 @@ Database migrations run automatically on first start (versioned via `schema_vers
 
 ```bash
 cd journal-pro
-python run_tests.py             # run all 10 regression suites (326 assertions, ~10s)
+python run_tests.py             # run all 10 regression suites (335 assertions, ~10s)
 python run_tests.py core tax    # selected suites only
 run_tests.bat                   # Windows double-click
 ```
@@ -114,7 +114,7 @@ Quality gates so future changes cannot silently break behavior:
 
 1. **Pre-commit hook**: after `git config core.hooksPath .githooks`, every `git commit` runs the suites — **a failing regression blocks the commit** (verified; escape hatch: `--no-verify`);
 2. **CI**: `.github/workflows/ci.yml` runs all suites on every push / PR (Python 3.10 / 3.12 matrix);
-3. All 326 assertions run against throwaway ledgers. See [docs/TESTING.md](docs/TESTING.md).
+3. All 335 assertions run against throwaway ledgers. See [docs/TESTING.md](docs/TESTING.md).
 
 ## Documentation
 

@@ -4,7 +4,8 @@ async function loadMeta() { S.meta = await api('/api/meta'); }
 function go(page) {
   S.page = page;
   try { if (location.hash.replace(/^#/, '') !== page) history.replaceState(null, '', '#' + page); } catch (e) {}
-  document.querySelectorAll('aside button').forEach(b => b.classList.toggle('active', b.dataset.page === page));
+  try { if (typeof highlightNav === 'function') highlightNav(page); else
+    document.querySelectorAll('aside button').forEach(b => b.classList.toggle('active', b.dataset.page === page)); } catch (e) {}
   $('crumb').textContent = ({ dashboard: '工作台', docs: '业务单据', vouchers: '凭证管理', journal: '现金银行日记账',
     daily: '日结核对', recon: '银行对账', periods: '期末结账', reports: '报表中心',
     books: '账簿与分析', compliance: '内控合规', invoices: '发票管理', assets: '固定资产', office: '导入导出中心',
@@ -20,7 +21,8 @@ function go(page) {
     reg_center: '金融监管会计', macro_center: '宏观经济会计',
     competency_center: '需求与四流追踪', advanced_center: '高阶核算与模型',
     arch_audit: '架构审计中心', sec_center: '安全中心',
-    base: '基础资料', system: '系统管理', role_center: '岗位与能力进阶', work_1: '账务核算', work_2: '财务与预算', work_3: '合同法务', work_4: '集团与战略财务', work_5: '准则核算', work_6: '审计鉴证', work_7: '成本与估值', work_8: '商事合规', work_9: '全税种管理', work_10: '战略与风控', work_11: '重大项目综合' })[page];
+    base: '基础资料', system: '系统管理', role_center: '岗位与能力进阶', work_1: '账务核算', work_2: '财务与预算', work_3: '合同法务', work_4: '集团与战略财务', work_5: '准则核算', work_6: '审计鉴证', work_7: '成本与估值', work_8: '商事合规', work_9: '全税种管理', work_10: '战略与风控', work_11: '重大项目综合',
+    graph_map: '知识图谱', seven_center: '七流分析', work_overview: '11 项工作总览' })[page] || '工作台';
   render();
 }
 document.querySelectorAll('aside button').forEach(b => b.onclick = () => go(b.dataset.page));
@@ -86,6 +88,7 @@ async function render() {
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
     }
     $('dbStatus').textContent = 'SQLite 已连接 · 迁移 v' + S.meta.migrations.length;
+    try { if (typeof highlightNav === 'function') highlightNav(S.page); } catch (_) {}
   } catch (e) {
     $('page').innerHTML = `<div class="card"><h3>加载失败</h3><p class="muted">${esc(e.message)}</p></div>`;
   }
