@@ -20,7 +20,7 @@ function go(page) {
     reg_center: '金融监管会计', macro_center: '宏观经济会计',
     competency_center: '需求与四流追踪', advanced_center: '高阶核算与模型',
     arch_audit: '架构审计中心', sec_center: '安全中心',
-    base: '基础资料', system: '系统管理' })[page];
+    base: '基础资料', system: '系统管理', work_1: '账务核算', work_2: '财务与预算', work_3: '合同法务', work_4: '集团与战略财务', work_5: '准则核算', work_6: '审计鉴证', work_7: '成本与估值', work_8: '商事合规', work_9: '全税种管理', work_10: '战略与风控', work_11: '重大项目综合' })[page];
   render();
 }
 document.querySelectorAll('aside button').forEach(b => b.onclick = () => go(b.dataset.page));

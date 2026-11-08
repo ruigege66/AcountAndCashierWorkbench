@@ -172,3 +172,17 @@ See `docs/需求差距与四流分析.md` for the full gap analysis. The survey 
 Added: a **Four-Flow Requirement Hub** (11 subjects / 203 knowledge points / full four-flow text, coverage matrix, gap list, flow-trace, applicability rulings, phased roadmap); **14 advanced accounting actions**, **11 quantitative finance models** and **4 closed-loop workflow state machines** (44 new endpoints); two Chinese workbench pages.
 
 **Not completed this round** (phased): consolidated statements & business combinations / financial instruments & fair value; full CPA audit suite; all CPA tax categories; strategy & enterprise risk management; multi-entity group architecture (prerequisite for consolidation and cash pooling).
+
+
+---
+
+## 33. V2.15 Reorganising the System around 11 "Jobs" (Four-Flow Workbenches)
+
+Re-reading the survey by column showed the headers say **"corresponding work"** data/value/work/execution flow: the four columns are four views of **the same job**, not four requirement types. The system is now reorganised accordingly: one row = one job = one workbench; four columns = four tabs; each workflow step is aligned with the data it produces, the action to perform and the existing system screen.
+
+- Sidebar: 11 jobs first; the old function menu is collapsed under "Browse by function".
+- Home: "My Work" overview with 11 job cards, step/action counts and live runs.
+- Workbench tabs: Data Flow (node chain + system objects), Value Flow (value proposition + metric links), Workflow (step-by-step state machine with "Go to function" buttons), Execution Flow (action table with system entry points).
+- Parsed from the workbook: 11 jobs / 64 data nodes / 79 steps / 76 actions. **43 steps are backed by existing functions, 36 are partial or missing** — shown honestly in Chinese labels rather than pretending full coverage.
+
+`tests/test_workmap.py` 14 assertions; 9 suites / 304 assertions total; 12 pages browser-verified.
