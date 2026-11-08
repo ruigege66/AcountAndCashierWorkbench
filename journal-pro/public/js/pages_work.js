@@ -318,6 +318,8 @@ const NAV_LABEL = {
   macro_center: '宏观经济会计', arch_audit: '架构审计中心', sec_center: '安全中心',
   graph_map: '知识图谱', seven_center: '七流分析',
   reports: '报表中心', acct_tools: '会计工具箱', cashier_tools: '出纳工作台', work_overview: '11 项工作总览',
+  daily: '日结核对', recon: '银行对账', periods: '期末结账', snapshots: '报表快照归档',
+  competency_center: '四流与能力图谱',
   work_1: '账务核算', work_2: '财务与预算', work_3: '合同法务（中级）', work_4: '集团与战略财务',
   work_5: '准则核算', work_6: '审计鉴证', work_7: '成本与估值', work_8: '商事合规',
   work_9: '全税种管理', work_10: '战略与风控', work_11: '重大项目综合',

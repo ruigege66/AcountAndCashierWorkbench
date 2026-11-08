@@ -70,6 +70,11 @@ def main():
         check("  所有已注册页面都在侧栏（无隐藏功能）", no_missing,
               " ".join(l for l in out.splitlines() if "未出现在侧栏" in l) or out.strip()[-80:])
 
+        r = subprocess.run([node, os.path.join(ROOT, "tests", "frontend", "nav_labels.js")],
+                           capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=ROOT)
+        out = (r.stdout or "").strip()
+        check("  侧栏条目都有中文名（不露英文 key）", "缺中文名： （无）" in out, out[-80:] or "无输出")
+
         r = subprocess.run([node, os.path.join(ROOT, "tests", "frontend", "boot_check.js")],
                            capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=ROOT)
         out = (r.stdout or "") + (r.stderr or "")

@@ -1,6 +1,6 @@
 # 测试指南 / Testing Guide（中英双语）
 
-> 本项目以「测试不过不能合入」为硬性质量闸门。11 套回归、335 项断言，全部基于临时账套，不影响正式数据。
+> 本项目以「测试不过不能合入」为硬性质量闸门。11 套回归、336 项断言，全部基于临时账套，不影响正式数据。
 > Hard quality gate: 10 regression suites / 326 assertions, all against throwaway ledgers.
 
 ## 1. 运行 / Running
