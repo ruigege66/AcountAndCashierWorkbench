@@ -21,6 +21,9 @@ try {
   if (_a) _a.value = ROLE_ACTORS[_role] || '系统';
 } catch (e) {}
 
+/* 功能原理悬浮说明（侧栏、按钮、表头、卡片标题） */
+try { if (typeof initHelp === 'function') initHelp(); } catch (e) {}
+
 /* 地址栏锚点变化 → 渲染对应页面。
    这样即使侧栏的动态渲染出问题，index.html 里的静态入口（<a href="#page">）也点得动。 */
 window.addEventListener('hashchange', function () {

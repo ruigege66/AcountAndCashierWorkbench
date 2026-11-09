@@ -158,8 +158,21 @@ Click the round **☾ / ☀** button in the top-right corner to switch skins. Yo
 
 - Open `http://127.0.0.1:8765/?theme=dark` to start in dark mode (handy for bookmarking or demos); the URL stays in sync after switching.
 - Chart ticks and legend labels adapt automatically, so figures stay legible in both skins. **All 65 pages and every button behave identically** — only the appearance changes, nothing to re-learn.
-- The `前端 11-09a` tag in the top-right corner is the front-end build version. If the UI looks wrong or a button does nothing, press **Ctrl+F5** first; an older tag means the browser is using a cached page.
+- The `前端 11-09b` tag in the top-right corner is the front-end build version. If the UI looks wrong or a button does nothing, press **Ctrl+F5** first; an older tag means the browser is using a cached page.
 - Printing automatically hides the sidebar, light blooms and buttons, leaving clean white content.
+
+### 30.5 Understanding each feature: guide bars and hover tips
+
+Three ways to see what a feature does and how its figures are calculated, without opening a manual:
+
+1. **Guide bar at the top of every page**: a 💡 strip explains the page's purpose. Click "Formula / basis ▾" to expand the data sources, formulas and usage notes. The Financial Ratios page, for example, lists the formulas for the current ratio, net margin and debt ratio.
+2. **Hover a sidebar item**: a card pops up with the purpose, what the number means, and the calculation. Group headings also explain what that group covers.
+3. **Hover a button, table header or card title**: 53 built-in metric rules match automatically — tax burden, depreciation, VAT payable, NPV, bad debt, current ratio and so on — and show the formula. Dotted underlines mark items that have an explanation.
+
+The sidebar is reorganised into 9 workflow groups, each with an index badge and an item count:
+1 Today's work · 2 Documents & vouchers · 3 Cash & period-end · 4 Statements & analysis · 5 Tax · 6 Data & graphs · 7 Legal / audit / regulatory · 8 External collaboration · 9 System & security.
+
+**All 65 features remain** — only the grouping and order changed.
 
 
 ---

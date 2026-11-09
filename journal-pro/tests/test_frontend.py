@@ -101,7 +101,8 @@ def main():
               r.returncode == 0 and "缺失: （无）" in out and "按钮跳转验证: 成功" in out
               and "侧栏四视角: 全部正常" in out,
               "；".join(l.strip() for l in out.splitlines()
-                        if "缺失:" in l or "侧栏四视角:" in l or "跳转验证:" in l or "脚本异常:" in l))
+                        if "缺失:" in l or "侧栏四视角:" in l or "跳转验证:" in l
+                        or "脚本异常:" in l or "功能说明体系:" in l or "悬浮说明弹出:" in l))
 
     # ⑤ 前端 api() 路径必须全部有后端路由（离线比对，不依赖服务）。
     #   真实事故：/api/competency/coverage 少写 /v28 前缀，首页卡片静默失效。
@@ -137,6 +138,19 @@ def main():
                and 'ROLE_ACTORS[_role]' in app_js and '.role-pick' in css)
     check("  角色下拉联动完整（视角/操作人/侧栏三处同步）", role_ok,
           "下拉+隐藏操作人+applyRole 统一入口")
+
+    # ⑧ 功能说明体系：重排后的分组、每页说明、悬浮组件与半透明背景都要在
+    help_js = read(os.path.join(ROOT, "public", "js", "help.js"))
+    act_js = read(os.path.join(ROOT, "public", "js", "actions_base.js"))
+    help_ok = ('/js/help.js' in html and 'NAV_HELP' in nav and 'GROUPS_ALL' in nav
+               and nav.count("      ['") >= 9
+               and all(x in help_js for x in ('HELP_RULES', 'function pageHelpHtml',
+                                              'function attachHelp', 'function initHelp'))
+               and 'pageHelpHtml(S.page)' in act_js and "attachHelp($('page'))" in act_js
+               and 'initHelp()' in app_js
+               and all(x in css for x in ('.page-help', '.help-tip', '.nav-hint', 'orbDrift')))
+    check("  功能说明体系与半透明光影背景完整", help_ok,
+          "9 组重排 / 65 条说明 / 页面提示条 / 悬浮浮层 / 漂浮光球")
 
     if not node:
         print("  [--] 未找到 node，动态渲染校验已跳过（静态校验通过即放行）")

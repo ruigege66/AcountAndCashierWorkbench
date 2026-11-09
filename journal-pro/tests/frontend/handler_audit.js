@@ -9,9 +9,15 @@ const ROOT = path.dirname(path.dirname(__dirname));
 const read = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 
 function el() {
+  const cs = new Set();
   return {
     innerHTML: '', textContent: '', value: '', files: [], dataset: {}, checked: false,
-    style: {}, classList: { add() {}, remove() {}, toggle() {}, contains() { return false; } },
+    style: {},
+    classList: {
+      add(c) { cs.add(c); }, remove(c) { cs.delete(c); },
+      toggle(c, f) { if (f === undefined) f = !cs.has(c); f ? cs.add(c) : cs.delete(c); },
+      contains(c) { return cs.has(c); },
+    },
     addEventListener() {}, appendChild() {}, removeChild() {}, remove() {}, focus() {},
     click() {}, querySelector: () => el(), querySelectorAll: () => [],
     getAttribute: () => null, setAttribute() {}, closest: () => null,
@@ -19,6 +25,7 @@ function el() {
 }
 
 const els = {};
+const listeners = {};
 const getEl = id => els[id] || (els[id] = el());
 const store = {
   _d: {},
@@ -36,7 +43,9 @@ const ctx = {
   localStorage: store,
   document: {
     getElementById: id => getEl(id), querySelector: () => el(), querySelectorAll: () => [],
-    createElement: () => el(), addEventListener() {}, body: el(), head: el(),
+    createElement: () => el(),
+    addEventListener(t, fn) { (listeners[t] = listeners[t] || []).push(fn); },
+    body: el(), head: el(),
     documentElement: {
       _theme: 'light',
       getAttribute(k) { return k === 'data-theme' ? this._theme : null; },
@@ -56,7 +65,7 @@ vm.createContext(ctx);
 // 按 index.html 顺序
 const FILES = ['core.js', 'pages_base.js', 'pages_v25.js', 'pages_v26.js', 'pages_v28.js',
   'actions_base.js', 'actions_v25.js', 'actions_v26.js', 'actions_v28.js',
-  'pages_work.js', 'app.js'];
+  'pages_work.js', 'help.js', 'app.js'];
 const errors = [];
 for (const f of FILES) {
   try {
@@ -173,9 +182,46 @@ try {
     && role.sel === 'manager' && role.restored === 'all';
 } catch (e) { role = { error: e.message }; }
 
+// ⑦ 功能说明体系：每个注册页面都要有说明，页面内关键词规则与三个组件齐备
+let helpOK = false, helpInfo = '';
+try {
+  const pages = vm.runInContext('Object.keys(PAGES)', ctx);
+  const helps = vm.runInContext('typeof NAV_HELP === "object" ? Object.keys(NAV_HELP) : []', ctx);
+  const noHelp = pages.filter(p => !helps.includes(p));
+  const rules = vm.runInContext('typeof HELP_RULES !== "undefined" ? HELP_RULES.length : 0', ctx);
+  const fns = ['pageHelpHtml', 'attachHelp', 'initHelp']
+    .every(f => vm.runInContext('typeof ' + f, ctx) === 'function');
+  const navPages = new Set([...vm.runInContext('navTreeHtml()', ctx)
+    .matchAll(/data-page="([^"]+)"/g)].map(m => m[1]));
+  const noNav = pages.filter(p => !navPages.has(p));
+  helpOK = !noHelp.length && !noNav.length && rules >= 30 && fns;
+  helpInfo = `说明 ${helps.length}/${pages.length} · 侧栏 ${navPages.size}/${pages.length} · 规则 ${rules} 条 · 组件 ${fns ? '齐备' : '缺失'}`
+    + (noHelp.length ? ' · 缺说明: ' + noHelp.join(',') : '')
+    + (noNav.length ? ' · 侧栏遗漏: ' + noNav.join(',') : '');
+} catch (e) { helpInfo = e.message; }
+
 console.log('按钮跳转验证:', jumpOK ? '成功（S.page: ' + jump.before + ' → ' + jump.after + ', hash: ' + jump.hash + '）'
   : '失败 ' + JSON.stringify(jump));
 console.log('主题切换验证:', themeOK ? '成功（light ↔ dark）' : '失败 ' + JSON.stringify(theme));
 console.log('角色切换验证:', roleOK ? '成功（视角/操作人/下拉三者同步）' : '失败 ' + JSON.stringify(role));
+// ⑧ 真实触发一次 mouseover，确认浮层确实渲染出「计算方式 / 口径」
+let hoverOK = false, hoverInfo = '';
+try {
+  const tip = getEl('helpTip');
+  const fake = {
+    getAttribute: k => k === 'data-help'
+      ? '衡量税负是否落在合理区间⟦应纳增值税 ÷ 利润表营业收入 × 100%' : null,
+    textContent: '税负率', parentNode: null,
+    getBoundingClientRect: () => ({ left: 100, top: 100, bottom: 130 }),
+  };
+  (listeners['mouseover'] || []).forEach(fn => fn({ target: fake }));
+  hoverOK = tip.classList.contains('show')
+    && tip.innerHTML.includes('计算方式') && tip.innerHTML.includes('应纳增值税')
+    && parseFloat(tip.style.top) >= 0 && parseFloat(tip.style.top) < 800;  // 浮层必须落在视口内
+  hoverInfo = tip.innerHTML.slice(0, 70);
+} catch (e) { hoverInfo = e.message; }
+
+console.log('功能说明体系:', helpOK ? '完整（' + helpInfo + '）' : '失败 ' + helpInfo);
+console.log('悬浮说明弹出:', hoverOK ? '成功（含计算方式）' : '失败 ' + hoverInfo);
 if (errors.length || missing.length || navErrors.length || badTargets.length
-    || !jumpOK || !themeOK || !roleOK) process.exit(1);
+    || !jumpOK || !themeOK || !roleOK || !helpOK || !hoverOK) process.exit(1);

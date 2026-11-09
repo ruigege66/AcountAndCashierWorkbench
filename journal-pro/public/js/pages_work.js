@@ -302,23 +302,37 @@ function showAllFeatures() {
 function navTreeHtml() {
   const pos = currentPosition() || 'all';
   // 全部功能模式：8 个大功能 → 全部小功能；岗位模式：只显示该档
+  // 按会计工作流顺序重排：今日要办 → 单据入账 → 资金期末 → 报表分析 → 税务
+  // → 数据图谱 → 专业域 → 外部协同 → 系统。每项都保留，只调整归类与顺序。
+  // 三元组 = [分组名, 这一组解决什么, 页面 id 列表]
   const GROUPS_ALL = [
-    ['工作台 · 11 项工作', ['dashboard','work_overview','work_1','work_2','work_3','work_4','work_5','work_6','work_7','work_8','work_9','work_10','work_11']],
-    ['财务核算', ['docs','invoices','assets','vouchers','journal','books','fin','cfstmt','reports','ratios','compare','daily','recon','periods','baddebt','yearend','snapshots','collection','partner','subjects']],
-    ['税务管理', ['tax_center']],
-    ['数据分析', ['analysis','graph','graph_map','seven_center','competency_center','role_center','advanced_center','rules','macro_center']],
-    ['法务 · 审计 · 监管', ['legal_center','audit_center','reg_center']],
-    ['外部协同', ['gateway_center','stmtimport','office']],
-    ['效率工具', ['acct_tools','cashier_tools','todo','search','tpl','print','vcheck']],
-    ['系统与安全', ['base','system','compliance','risk','audit','monitor','sec_center','arch_audit','help']],
+    ['工作台 · 按业务办', '从「今天要办什么」进入，11 项工作按步骤引导办理',
+      ['dashboard','work_overview','todo','search','work_1','work_2','work_3','work_4','work_5','work_6','work_7','work_8','work_9','work_10','work_11']],
+    ['单据 · 凭证 · 账簿', '业务单据 → 凭证 → 日记账 → 账簿，含模板、打印与合规体检',
+      ['docs','invoices','vouchers','journal','books','subjects','tpl','print','vcheck','acct_tools','cashier_tools']],
+    ['资金 · 往来 · 期末', '日结核对、银行对账、期末与年度结转、资产与往来管理',
+      ['daily','recon','periods','yearend','snapshots','assets','baddebt','collection','partner']],
+    ['报表与经营分析', '三大报表、现金流量表、比率、同比环比与经营分析报告',
+      ['fin','cfstmt','reports','ratios','compare','analysis']],
+    ['税务管理', '全税种台账、认证抵扣、申报、税负率、个税与汇算清缴',
+      ['tax_center']],
+    ['数据分析与图谱', '功能联动、知识图谱、七流、能力进阶、高阶模型与规则配置',
+      ['graph','graph_map','seven_center','competency_center','role_center','advanced_center','rules','macro_center']],
+    ['法务 · 审计 · 监管', '合同法务、内部审计、金融监管会计三个专业域',
+      ['legal_center','audit_center','reg_center']],
+    ['外部协同', '开票 / 网银文件桥梁、对账单导入与整站导入导出',
+      ['gateway_center','stmtimport','office']],
+    ['系统与安全', '基础资料、参数、内控、预警、审计链、监控与帮助',
+      ['base','system','compliance','risk','audit','monitor','sec_center','arch_audit','help']],
   ];
   const lv = NAV_LEVELS[pos];
-  // 两种数据源格式统一成 [标题, 页面数组] 元组：
-  //   GROUPS_ALL 本身就是元组数组；NAV_LEVELS.*.groups 是 {title,pages} 对象数组。
-  // 以前直接 `for (const [title,pages] of 对象数组)` 会抛 "is not iterable"，
-  // 导致整个侧栏动态渲染失败（只剩静态兜底）。
+  // 统一成 [标题, 页面数组, 分组说明]：GROUPS_ALL 是三元组、
+  // NAV_LEVELS.*.groups 是 {title,pages} 对象数组。以前直接按二元组解构
+  // 对象数组会抛 "is not iterable"，导致整个侧栏渲染失败。
   const raw = pos === 'all' ? GROUPS_ALL : (lv && Array.isArray(lv.groups) ? lv.groups : GROUPS_ALL);
-  const groups = raw.map(g => Array.isArray(g) ? g : [g.title || '', Array.isArray(g.pages) ? g.pages : []]);
+  const groups = raw.map(g => Array.isArray(g)
+    ? [g[0] || '', Array.isArray(g[2]) ? g[2] : [], g[1] || '']
+    : [g.title || '', Array.isArray(g.pages) ? g.pages : [], g.desc || '']);
   const rolesHtml = POSITION_ROLES.map(r =>
     `<button data-position="${r.id}" style="display:block;width:100%;text-align:left;${pos === r.id ? 'color:var(--primary);font-weight:500' : 'color:var(--text2)'}" onclick="setPosition('${r.id}')">${r.id === pos ? '● ' : '○ '}${esc(r.name)}</button>`).join('');
   let out = `<div data-navver="V218"></div><details style="border-bottom:1px solid rgba(255,255,255,.08)"><summary style="cursor:pointer;padding:8px 12px;font-size:12px">👤 岗位视角 · ${esc((POSITION_ROLES.find(r=>r.id===pos)||{}).name||'全部功能')}</summary><div style="padding:4px 8px">${rolesHtml}</div></details>`;
@@ -326,11 +340,16 @@ function navTreeHtml() {
     out += `<div style="padding:8px 12px;font-size:11.5px;line-height:1.6;color:#F3C969;background:rgba(255,255,255,.05)">
       ⚠ 当前是「岗位视角」，只列本档功能。要看到全部 65 项请点顶部「☰ 全部功能」。</div>`;
   }
+  out += `<div class="nav-hint">💡 悬浮任意功能，看用途与算法</div>`;
   // 分组一律展开：用户要的是能一眼看到所有功能，不需要再点一次
-  for (const [title, pages] of groups) {
-    const btns = pages.map(p => `<button data-page="${p}" style="display:block;width:100%;text-align:left">${esc(NAV_LABEL[p] || p)}</button>`).join('');
-    out += `<details open style="border-bottom:1px solid rgba(255,255,255,.08)"><summary style="cursor:pointer;padding:9px 12px;font-size:12.5px;font-weight:500">${esc(title)}（${pages.length}）</summary><div>${btns}</div></details>`;
-  }
+  groups.forEach(([title, pages, desc], gi) => {
+    const btns = pages.map(p => `<button data-page="${p}" data-help="${esc(NAV_HELP[p] || NAV_LABEL[p] || p)}"
+      style="display:block;width:100%;text-align:left">${esc(NAV_LABEL[p] || p)}</button>`).join('');
+    out += `<details open style="border-bottom:1px solid rgba(255,255,255,.08)"><summary
+      data-help="${esc(desc || title)}" style="cursor:pointer;padding:9px 12px;font-size:12.5px;font-weight:500">
+      <span class="ng-idx">${gi + 1}</span>${esc(title)}<span class="ng-count">${pages.length}</span></summary>
+      <div>${btns}</div></details>`;
+  });
   return out;
 }
 const NAV_LABEL = {
@@ -352,6 +371,78 @@ const NAV_LABEL = {
   work_1: '账务核算', work_2: '财务与预算', work_3: '合同法务（中级）', work_4: '集团与战略财务',
   work_5: '准则核算', work_6: '审计鉴证', work_7: '成本与估值', work_8: '商事合规',
   work_9: '全税种管理', work_10: '战略与风控', work_11: '重大项目综合',
+};
+
+/* 功能说明：悬浮侧栏入口 / 页面按钮时显示。
+   用 ⟦ 分段：① 用途与代表意义 ② 计算方式 / 取数口径 ③ 使用提示（可选）。
+   每个页面一条，新增页面务必同步补这里（handler_audit 会校验覆盖率）。 */
+const HELP_SEP = '⟦';
+const NAV_HELP = {
+  dashboard: '从「今天要办什么」进入系统，汇总待办、四流断链、管控检查点与能力完整度⟦卡片数字来自待办中心 / 断链清单 / 管控检查点等实时接口，随业务操作自动刷新',
+  work_overview: '11 项会计工作总览，按调研表的工作流步骤组织⟦每项点「进入工作台」可看办理步骤、要做动作、产生数据与直达办理入口',
+  work_1: '账务核算：从业务单据收集到财务报表编制的完整链路⟦工作流步骤 → 数据流产物 → 执行动作三层对齐；只有已过账凭证才进入报表',
+  work_2: '财务与预算：预算编制、执行监控、差异分析与投融资测算⟦差异分析 = 实际发生额 − 预算额；投资净现值 NPV = Σ CFt ÷ (1+r)^t − 初始投资',
+  work_3: '合同法务（中级）：合同合规审核、主体设立变更、税务申报与纠纷维权⟦里程碑付款累计不得超过合同金额，超额会被拦截',
+  work_4: '集团与战略财务：战略拆解、全面预算、并购尽调估值与内控体系⟦并购估值常用 DCF / 可比公司倍数；重大项目需先立项再尽调',
+  work_5: '准则核算：复杂业务会计判断、合并报表与附注披露⟦合并抵消调整后，集团口径资产 / 收入需抵消内部交易，避免重复计算',
+  work_6: '审计鉴证：业务承接、风险评估、控制测试、实质性程序到出具报告⟦大额凭证 100% 抽查，中低额分层随机抽样；函证差异需查明原因',
+  work_7: '成本与估值：财务预测、投融资量化评估、成本核算与经营决策模拟⟦短期经营决策用差量分析：差量收入 − 差量成本 > 0 才可行',
+  work_8: '商事合规：公司治理、证券发行披露、合同审核、破产清算与票据⟦破产债权按法定清偿顺序分配，票据权利需在有效期内行使',
+  work_9: '全税种管理：涉税核算、税额计算、申报缴纳、稽查应对与筹划⟦应纳税额 = 销项税额 − 已认证进项税额；税负率 = 应纳增值税 ÷ 会计收入 × 100%',
+  work_10: '战略与风控：内外部环境分析、战略落地、风险识别评估与应对⟦风险值常用「发生概率 × 影响程度」分级，重大风险需制定应对方案',
+  work_11: '重大项目综合：复杂业务立项、多维度尽调、跨专业方案与风险把控⟦跨模块联动：合同 / 税务 / 审计 / 估值结果共同进入综合判断',
+  docs: '业务单据：付款申请、收款单、备用金借款、费用报销的录入与审批流⟦结算时自动生成并过账凭证，同时登记出纳日记账⟦草稿 → 提交 → 审批 → 结算，驳回与作废不产生下游数据',
+  invoices: '发票登记与状态管理（已入账 / 已核销 / 已作废）⟦销项发票是增值税销项税额、账龄分析与催收清单的数据源',
+  vouchers: '凭证录入、审核、过账、作废与红字冲销⟦借方合计必须等于贷方合计；只有「已过账」凭证才进入科目余额与三大报表',
+  journal: '现金 / 银行日记账，逐笔记录资金收付⟦由凭证过账自动生成，余额按账户逐笔重算；已登记流水不可删改，更正需红字冲销',
+  books: '总账、明细账与科目余额查询⟦科目余额 = 最近一次期初余额 + 全部已过账分录的借贷净额',
+  subjects: '会计科目表与模板套用⟦新增科目会由报表通用兜底自动归集，不会漏项导致报表不平',
+  tpl: '常用凭证模板，一键套用生成凭证⟦模板只保存分录结构，金额与日期在套用时填写',
+  print: '凭证打印与批量输出⟦按凭证号 / 期间筛选，输出保持借贷合计一致',
+  vcheck: '凭证合规体检⟦检查借贷平衡、科目有效性、附件与审批状态，问题凭证列出中文原因',
+  acct_tools: '会计工具箱：批量过账、待摊摊销、辅助核算维度与编号规则⟦批量过账会联动科目余额表、利润表、现金流量表与全部比率',
+  cashier_tools: '出纳工作台：现金盘点、票据登记⟦盘点差额进入日结核对并触发预警；票据到期日进入未来资金预测',
+  daily: '日结核对：账实核对与差异记录⟦账实差额 = 实盘金额 − 账面余额，不为 0 会触发风险预警',
+  recon: '银行对账：对账单流水与日记账自动匹配⟦按日期 + 金额 + 方向匹配，未匹配流水进入待办并可能触发超期预警',
+  periods: '期末结账与反结账⟦结账前跑检查清单（未过账凭证、未核对流水等）；结账期间禁止新增或修改⟦结账后如确需补录，先「反结账」',
+  yearend: '年度结转：本年利润 4103 → 利润分配 4104⟦结转凭证标记 is_closing，不参与利润表；留存收益总额不变',
+  snapshots: '报表快照归档：把当期三大报表存成历史版本⟦用于跨期对比与审计留痕，归档后不受后续凭证影响',
+  assets: '固定资产台账、购置入账与折旧计提⟦月折旧 = 原值 × (1 − 残值率) ÷ 使用月数；计入当期费用并增加累计折旧',
+  baddebt: '按账龄比例计提坏账准备⟦应计提额 = Σ(各账龄段应收余额 × 对应计提率)，与 1231 已计提额比较取差额⟦足额后重复计提会被拦截，不会重复入账',
+  collection: '往来催收清单：按账龄列出逾期待收款⟦账龄 = 基准日 − 发票到期日；基准日可在分析规则中配置',
+  partner: '往来账：按往来单位汇总应收应付与核销状态⟦余额 = 该单位全部发票金额 − 已核销金额',
+  fin: '三大财务报表：资产负债表、利润表、现金流量表⟦资产 = 负债 + 所有者权益；不平通常因期初未录、科目分类缺失或存在未过账凭证',
+  cfstmt: '现金流量表正表⟦按对方科目将日记账流水归入经营 / 投资 / 筹资；累计净额应等于货币资金变动',
+  reports: '报表中心：月度收入、支出、净流入趋势与科目发生额⟦净流入 = 当期收入 − 当期支出',
+  ratios: '10 项财务比率与健康评分⟦流动比率 = 流动资产 ÷ 流动负债；销售净利率 = 净利润 ÷ 营业收入 × 100%；资产负债率 = 负债合计 ÷ 资产合计 × 100%⟦分母为 0 时该比率显示「不适用」',
+  compare: '同比环比与 12 个月趋势⟦增长率 = (本期 − 基期) ÷ |基期| × 100%，基期为 0 时不计算增长率',
+  analysis: '在线经营分析报告，可打印 PDF 或导出 HTML⟦含 KPI、四大能力、瀑布图、趋势、比率、账龄、现金流与 6 个月预测；预测用线性回归 + 3 个月移动平均混合',
+  tax_center: '全税种管理：销项 / 进项台账、认证、增值税申报、附加税、税负率、企业所得税、个税、印花税等⟦应纳税额 = 销项税额 − 已认证进项税额；附加税 = 应纳税额 × 12%；税负率 = 应纳增值税 ÷ 利润表营业收入 × 100%⟦税负率控制区间默认 2.00%–3.50%，所有比率保留两位小数',
+  graph: '功能联动关系图：写操作会影响哪些下游分析⟦基于 ImpactGraph 的节点与边，边上的说明解释「为什么会受影响」',
+  graph_map: '知识图谱：工作 → 流程步骤 → 数据对象 → 执行动作⟦点任一节点看相邻关系与挂载的数据表，节点挨着节点像图数据库',
+  seven_center: '七流分析：数据流、价值流、工作流、执行流、资金流、管控流、合规流⟦含管控检查点与合规法规清单，按角色匹配查看',
+  competency_center: '四流与能力图谱：需求覆盖度、缺口与追溯⟦完整度 = 已支撑项 ÷ 全部需求项 × 100%',
+  role_center: '岗位与能力进阶：岗位家族 × 七流 × 职业层级⟦用于看某岗位该掌握哪些工作，不做功能裁剪',
+  advanced_center: '高阶核算与模型：存货计价、权益法、递延税、租赁现值、收入五步法，以及 NPV / IRR / WACC / 杜邦 / EVA / BS⟦NPV = Σ CFt ÷ (1+r)^t − 初始投资；WACC = 股权成本 × 股权权重 + 债务成本 × (1−税率) × 债务权重',
+  rules: '分析规则配置：现金流分类前缀、比率阈值、账龄基准日⟦规则热更新，改完立即影响所有下游分析，无需重启',
+  macro_center: '宏观经济会计：指标、通胀调整、行业对标、压力测试与汇率重估⟦通胀调整按不变价口径重述，汇率重估按期末汇率折算外币余额',
+  legal_center: '合同法务：合同台账、付款里程碑、法律审核、纠纷案件、用印与合规义务⟦预计负债 = 索赔金额 × 胜诉概率；里程碑付款累计不得超过合同金额',
+  audit_center: '内部审计：年度计划、底稿、分层抽样、发现与整改、函证与调整分录⟦大额 100% 抽查，中低额随机抽样；调整分录必须借贷平衡',
+  reg_center: '金融监管会计：监管报表、反洗钱筛查、关联交易、ECL 与监管指标⟦ECL 按三阶段模型：阶段一 12 个月预期损失，阶段二 / 三 整个存续期预期损失',
+  gateway_center: '开票 / 网银协同：用文件桥梁批量导出开票任务与付款模板、回传结果⟦只做批量文件导入导出，不模拟登录税务或网银，也不存储任何密码⟦标准流程：导出模板 → 在官方系统操作 → 回传结果并自动查重',
+  stmtimport: '对账单批量导入：字段映射 + 自动查重⟦重复流水按「日期 + 金额 + 方向 + 摘要」判重，导入后到银行对账里匹配',
+  office: '导入导出中心：Excel / CSV 与整站迁移包⟦迁移包含程序、迁移脚本、测试、文档与数据库快照，可在另一台机器直接启动',
+  todo: '我的待办中心：待审批单据、未过账凭证、未匹配流水、未核对日记账、未入账发票等⟦每项数量实时统计，办完自动消项',
+  search: '全局搜索：按功能名或业务关键词直达对应页面⟦输入「开票」「盘点」「审计」等即可，结果点一下跳转',
+  base: '基础资料：科目、项目、往来单位、银行账户与期初建账⟦期初必须借贷平衡，否则会直接破坏「资产 = 负债 + 权益」',
+  system: '系统管理：参数配置、备份恢复、演示数据与运行时健康⟦演示数据带 [演示] 标记，一键清空且不影响自己录入的数据',
+  compliance: '内控合规：职责分离开关与合规义务倒计时⟦开启后申请人不能审批或办理自己的单据，换角色或换操作人后可继续',
+  risk: '风险预警：税负率偏离、现金流不足、账龄超期等规则⟦预警分级 高 / 中 / 低，阈值可在分析规则中调整',
+  audit: '审计中心（哈希链）：所有写操作留痕，可校验链是否被篡改⟦每条日志含前一条哈希，任一记录被改动都会导致后续校验失败',
+  monitor: '监控大屏：现金 / 银行余额、14 天收支曲线、项目结构与分级预警⟦数据源与日记账、凭证分录一致，随业务实时刷新',
+  sec_center: '安全中心：RBAC、会话、敏感操作审计、限流与输入安全扫描⟦登录失败会锁定，凭据类字段一律拒绝存储',
+  arch_audit: '架构审计中心：分层依赖、循环引用与迁移版本健康⟦领域层不得反向依赖适配层，也不得直接写 SQL',
+  help: '帮助中心：中英文用户手册与常见问题⟦手册随版本更新，界面与实际不一致时以界面为准',
 };
 
 /* ==================== 今日工作台（行动导向首页） ==================== */

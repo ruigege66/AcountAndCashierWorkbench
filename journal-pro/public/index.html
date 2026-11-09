@@ -25,93 +25,95 @@ try {
     <div class="side-top">
       <input id="globalSearch" placeholder="🔍 找功能：开票 / 盘点 / 审计…" oninput="showSearchResults(this.value)"
         style="width:100%;font-size:12px" autocomplete="off">
-      <button class="side-all" onclick="showAllFeatures()">☰ 全部功能（65 项，点此展开）</button>
+      <button class="side-all" onclick="showAllFeatures()">☰ 全部功能 65 项</button>
       <div id="searchResults" style="display:none;position:absolute;left:10px;right:10px;top:82px;z-index:99;
         background:var(--card);border:1px solid var(--border);border-radius:8px;box-shadow:0 6px 20px rgba(20,40,80,.15);
         max-height:340px;overflow:auto"></div>
     </div>
     <div id="navTree"><!-- 侧栏静态兜底：脚本没渲染成功时仍可点（#锚点跳转）。renderNav() 成功后整体替换。 -->
 <div class="nav-static">
-  <div class="ns-group"><div class="ns-title">工作台 · 11 项工作（13）</div>
-    <a href="#dashboard">今日工作台</a>
-    <a href="#work_overview">11 项工作总览</a>
-    <a href="#work_1">账务核算</a>
-    <a href="#work_2">财务与预算</a>
-    <a href="#work_3">合同法务（中级）</a>
-    <a href="#work_4">集团与战略财务</a>
-    <a href="#work_5">准则核算</a>
-    <a href="#work_6">审计鉴证</a>
-    <a href="#work_7">成本与估值</a>
-    <a href="#work_8">商事合规</a>
-    <a href="#work_9">全税种管理</a>
-    <a href="#work_10">战略与风控</a>
-    <a href="#work_11">重大项目综合</a>
+  <div class="ns-group"><div class="ns-title">① 工作台 · 按业务办（15）</div>
+    <a href="#dashboard" title="从「今天要办什么」进入系统，汇总待办、四流断链、管控检查点与能力完整度">今日工作台</a>
+    <a href="#work_overview" title="11 项会计工作总览，按调研表的工作流步骤组织">11 项工作总览</a>
+    <a href="#todo" title="我的待办中心：待审批单据、未过账凭证、未匹配流水、未核对日记账、未入账发票等">我的待办中心</a>
+    <a href="#search" title="全局搜索：按功能名或业务关键词直达对应页面">全局搜索</a>
+    <a href="#work_1" title="账务核算：从业务单据收集到财务报表编制的完整链路">账务核算</a>
+    <a href="#work_2" title="财务与预算：预算编制、执行监控、差异分析与投融资测算">财务与预算</a>
+    <a href="#work_3" title="合同法务（中级）：合同合规审核、主体设立变更、税务申报与纠纷维权">合同法务（中级）</a>
+    <a href="#work_4" title="集团与战略财务：战略拆解、全面预算、并购尽调估值与内控体系">集团与战略财务</a>
+    <a href="#work_5" title="准则核算：复杂业务会计判断、合并报表与附注披露">准则核算</a>
+    <a href="#work_6" title="审计鉴证：业务承接、风险评估、控制测试、实质性程序到出具报告">审计鉴证</a>
+    <a href="#work_7" title="成本与估值：财务预测、投融资量化评估、成本核算与经营决策模拟">成本与估值</a>
+    <a href="#work_8" title="商事合规：公司治理、证券发行披露、合同审核、破产清算与票据">商事合规</a>
+    <a href="#work_9" title="全税种管理：涉税核算、税额计算、申报缴纳、稽查应对与筹划">全税种管理</a>
+    <a href="#work_10" title="战略与风控：内外部环境分析、战略落地、风险识别评估与应对">战略与风控</a>
+    <a href="#work_11" title="重大项目综合：复杂业务立项、多维度尽调、跨专业方案与风险把控">重大项目综合</a>
   </div>
-  <div class="ns-group"><div class="ns-title">财务核算（20）</div>
-    <a href="#docs">业务单据</a>
-    <a href="#invoices">发票管理</a>
-    <a href="#assets">固定资产</a>
-    <a href="#vouchers">凭证管理</a>
-    <a href="#journal">现金银行日记账</a>
-    <a href="#books">账簿与分析</a>
-    <a href="#fin">财务报表</a>
-    <a href="#cfstmt">现金流量表（正表）</a>
-    <a href="#reports">报表中心</a>
-    <a href="#ratios">财务比率分析</a>
-    <a href="#compare">同比环比分析</a>
-    <a href="#daily">日结核对</a>
-    <a href="#recon">银行对账</a>
-    <a href="#periods">期末结账</a>
-    <a href="#baddebt">坏账准备计提</a>
-    <a href="#yearend">年度结转</a>
-    <a href="#snapshots">报表快照归档</a>
-    <a href="#collection">往来催收清单</a>
-    <a href="#partner">往来账</a>
-    <a href="#subjects">会计科目模板</a>
+  <div class="ns-group"><div class="ns-title">② 单据 · 凭证 · 账簿（11）</div>
+    <a href="#docs" title="业务单据：付款申请、收款单、备用金借款、费用报销的录入与审批流">业务单据</a>
+    <a href="#invoices" title="发票登记与状态管理（已入账 / 已核销 / 已作废）">发票管理</a>
+    <a href="#vouchers" title="凭证录入、审核、过账、作废与红字冲销">凭证管理</a>
+    <a href="#journal" title="现金 / 银行日记账，逐笔记录资金收付">现金银行日记账</a>
+    <a href="#books" title="总账、明细账与科目余额查询">账簿与分析</a>
+    <a href="#subjects" title="会计科目表与模板套用">会计科目模板</a>
+    <a href="#tpl" title="常用凭证模板，一键套用生成凭证">常用凭证模板</a>
+    <a href="#print" title="凭证打印与批量输出">凭证打印</a>
+    <a href="#vcheck" title="凭证合规体检">凭证合规体检</a>
+    <a href="#acct_tools" title="会计工具箱：批量过账、待摊摊销、辅助核算维度与编号规则">会计工具箱</a>
+    <a href="#cashier_tools" title="出纳工作台：现金盘点、票据登记">出纳工作台</a>
   </div>
-  <div class="ns-group"><div class="ns-title">税务管理（1）</div>
-    <a href="#tax_center">税务中心</a>
+  <div class="ns-group"><div class="ns-title">③ 资金 · 往来 · 期末（9）</div>
+    <a href="#daily" title="日结核对：账实核对与差异记录">日结核对</a>
+    <a href="#recon" title="银行对账：对账单流水与日记账自动匹配">银行对账</a>
+    <a href="#periods" title="期末结账与反结账">期末结账</a>
+    <a href="#yearend" title="年度结转：本年利润 4103 → 利润分配 4104">年度结转</a>
+    <a href="#snapshots" title="报表快照归档：把当期三大报表存成历史版本">报表快照归档</a>
+    <a href="#assets" title="固定资产台账、购置入账与折旧计提">固定资产</a>
+    <a href="#baddebt" title="按账龄比例计提坏账准备">坏账准备计提</a>
+    <a href="#collection" title="往来催收清单：按账龄列出逾期待收款">往来催收清单</a>
+    <a href="#partner" title="往来账：按往来单位汇总应收应付与核销状态">往来账</a>
   </div>
-  <div class="ns-group"><div class="ns-title">数据分析（9）</div>
-    <a href="#analysis">在线经营分析报告</a>
-    <a href="#graph">功能联动关系</a>
-    <a href="#graph_map">知识图谱</a>
-    <a href="#seven_center">七流分析</a>
-    <a href="#competency_center">四流与能力图谱</a>
-    <a href="#role_center">岗位与能力进阶</a>
-    <a href="#advanced_center">高阶核算与模型</a>
-    <a href="#rules">分析规则配置</a>
-    <a href="#macro_center">宏观经济会计</a>
+  <div class="ns-group"><div class="ns-title">④ 报表与经营分析（6）</div>
+    <a href="#fin" title="三大财务报表：资产负债表、利润表、现金流量表">财务报表</a>
+    <a href="#cfstmt" title="现金流量表正表">现金流量表（正表）</a>
+    <a href="#reports" title="报表中心：月度收入、支出、净流入趋势与科目发生额">报表中心</a>
+    <a href="#ratios" title="10 项财务比率与健康评分">财务比率分析</a>
+    <a href="#compare" title="同比环比与 12 个月趋势">同比环比分析</a>
+    <a href="#analysis" title="在线经营分析报告，可打印 PDF 或导出 HTML">在线经营分析报告</a>
   </div>
-  <div class="ns-group"><div class="ns-title">法务 · 审计 · 监管（3）</div>
-    <a href="#legal_center">法务管理</a>
-    <a href="#audit_center">内部审计</a>
-    <a href="#reg_center">金融监管会计</a>
+  <div class="ns-group"><div class="ns-title">⑤ 税务管理（1）</div>
+    <a href="#tax_center" title="全税种管理：销项 / 进项台账、认证、增值税申报、附加税、税负率、企业所得税、个税、印花税等">税务中心</a>
   </div>
-  <div class="ns-group"><div class="ns-title">外部协同（3）</div>
-    <a href="#gateway_center">开票 / 网银协同</a>
-    <a href="#stmtimport">对账单批量导入</a>
-    <a href="#office">导入导出中心</a>
+  <div class="ns-group"><div class="ns-title">⑥ 数据分析与图谱（8）</div>
+    <a href="#graph" title="功能联动关系图：写操作会影响哪些下游分析">功能联动关系</a>
+    <a href="#graph_map" title="知识图谱：工作 → 流程步骤 → 数据对象 → 执行动作">知识图谱</a>
+    <a href="#seven_center" title="七流分析：数据流、价值流、工作流、执行流、资金流、管控流、合规流">七流分析</a>
+    <a href="#competency_center" title="四流与能力图谱：需求覆盖度、缺口与追溯">四流与能力图谱</a>
+    <a href="#role_center" title="岗位与能力进阶：岗位家族 × 七流 × 职业层级">岗位与能力进阶</a>
+    <a href="#advanced_center" title="高阶核算与模型：存货计价、权益法、递延税、租赁现值、收入五步法，以及 NPV / IRR / WACC / 杜邦 / EVA / BS">高阶核算与模型</a>
+    <a href="#rules" title="分析规则配置：现金流分类前缀、比率阈值、账龄基准日">分析规则配置</a>
+    <a href="#macro_center" title="宏观经济会计：指标、通胀调整、行业对标、压力测试与汇率重估">宏观经济会计</a>
   </div>
-  <div class="ns-group"><div class="ns-title">效率工具（7）</div>
-    <a href="#acct_tools">会计工具箱</a>
-    <a href="#cashier_tools">出纳工作台</a>
-    <a href="#todo">我的待办中心</a>
-    <a href="#search">全局搜索</a>
-    <a href="#tpl">常用凭证模板</a>
-    <a href="#print">凭证打印</a>
-    <a href="#vcheck">凭证合规体检</a>
+  <div class="ns-group"><div class="ns-title">⑦ 法务 · 审计 · 监管（3）</div>
+    <a href="#legal_center" title="合同法务：合同台账、付款里程碑、法律审核、纠纷案件、用印与合规义务">法务管理</a>
+    <a href="#audit_center" title="内部审计：年度计划、底稿、分层抽样、发现与整改、函证与调整分录">内部审计</a>
+    <a href="#reg_center" title="金融监管会计：监管报表、反洗钱筛查、关联交易、ECL 与监管指标">金融监管会计</a>
   </div>
-  <div class="ns-group"><div class="ns-title">系统与安全（9）</div>
-    <a href="#base">基础资料</a>
-    <a href="#system">系统管理</a>
-    <a href="#compliance">内控合规</a>
-    <a href="#risk">风险预警</a>
-    <a href="#audit">审计中心（哈希链）</a>
-    <a href="#monitor">监控大屏</a>
-    <a href="#sec_center">安全中心</a>
-    <a href="#arch_audit">架构审计中心</a>
-    <a href="#help">帮助中心</a>
+  <div class="ns-group"><div class="ns-title">⑧ 外部协同（3）</div>
+    <a href="#gateway_center" title="开票 / 网银协同：用文件桥梁批量导出开票任务与付款模板、回传结果">开票 / 网银协同</a>
+    <a href="#stmtimport" title="对账单批量导入：字段映射 + 自动查重">对账单批量导入</a>
+    <a href="#office" title="导入导出中心：Excel / CSV 与整站迁移包">导入导出中心</a>
+  </div>
+  <div class="ns-group"><div class="ns-title">⑨ 系统与安全（9）</div>
+    <a href="#base" title="基础资料：科目、项目、往来单位、银行账户与期初建账">基础资料</a>
+    <a href="#system" title="系统管理：参数配置、备份恢复、演示数据与运行时健康">系统管理</a>
+    <a href="#compliance" title="内控合规：职责分离开关与合规义务倒计时">内控合规</a>
+    <a href="#risk" title="风险预警：税负率偏离、现金流不足、账龄超期等规则">风险预警</a>
+    <a href="#audit" title="审计中心（哈希链）：所有写操作留痕，可校验链是否被篡改">审计中心（哈希链）</a>
+    <a href="#monitor" title="监控大屏：现金 / 银行余额、14 天收支曲线、项目结构与分级预警">监控大屏</a>
+    <a href="#sec_center" title="安全中心：RBAC、会话、敏感操作审计、限流与输入安全扫描">安全中心</a>
+    <a href="#arch_audit" title="架构审计中心：分层依赖、循环引用与迁移版本健康">架构审计中心</a>
+    <a href="#help" title="帮助中心：中英文用户手册与常见问题">帮助中心</a>
   </div>
 </div>
     </div>
@@ -131,7 +133,7 @@ try {
           </select>
         </label>
         <input type="hidden" id="actor" value="出纳">
-        <span class="build" id="buildTag" title="前端版本：如果这里不是最新日期，说明浏览器用的是旧缓存，请按 Ctrl+F5 强制刷新">前端 11-09a</span>
+        <span class="build" id="buildTag" title="前端版本：如果这里不是最新日期，说明浏览器用的是旧缓存，请按 Ctrl+F5 强制刷新">前端 11-09b</span>
         <span><span class="dot"></span><span id="dbStatus">数据库连接中…</span></span>
       </div>
     </header>
@@ -152,6 +154,7 @@ try {
 <script src="/js/actions_v26.js"></script>
 <script src="/js/actions_v28.js"></script>
 <script src="/js/pages_work.js"></script>
+<script src="/js/help.js"></script>
 <script src="/js/app.js"></script>
 </body>
 </html>

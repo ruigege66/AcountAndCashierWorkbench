@@ -44,7 +44,10 @@ async function render() {
   $('page').innerHTML = '<div class="empty">加载中…</div>';
   try {
     if (!S.meta) await loadMeta();
-    $('page').innerHTML = await PAGES[S.page]();
+    // 页面顶部插入「这个功能干什么 / 怎么算」的说明条，再给按钮表头挂悬浮解释
+    $('page').innerHTML = (typeof pageHelpHtml === 'function' ? pageHelpHtml(S.page) : '')
+      + await PAGES[S.page]();
+    try { if (typeof attachHelp === 'function') attachHelp($('page')); } catch (_) {}
     if (S.page === 'dashboard') {
       const [m, s] = await Promise.all([api('/api/reports/monthly'), api('/api/reports/subjects')]);
       safeChart('c1', { type: 'bar', data: { labels: m.items.map(x => x.period), datasets: [
@@ -90,6 +93,7 @@ async function render() {
         datasets: [{ label: '次数', data: st.by_action.map(x => x.n), backgroundColor: '#4472C4', borderRadius: 4 }] },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
     }
+    try { if (typeof attachHelp === 'function') attachHelp($('page')); } catch (_) {}
     $('dbStatus').textContent = 'SQLite 已连接 · 迁移 v' + S.meta.migrations.length;
     try { if (typeof highlightNav === 'function') highlightNav(S.page); } catch (_) {}
   } catch (e) {
