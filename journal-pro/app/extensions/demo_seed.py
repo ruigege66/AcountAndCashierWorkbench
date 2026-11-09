@@ -31,19 +31,33 @@ def _pk(conn, tbl):
 
 def clear(conn, m, body, qs):
     rows = q(conn, "SELECT tbl,row_id FROM demo_records ORDER BY id DESC")
-    n = 0
+    n, failed = 0, []
     pkc = {}
     for r in rows:
         try:
             pk = pkc.setdefault(r["tbl"], _pk(conn, r["tbl"]))
             conn.execute(f"DELETE FROM {r['tbl']} WHERE {pk}=?", (r["row_id"],))
             n += 1
-        except Exception:
-            pass
+        except Exception as e:
+            # 不再静默吞掉：账本防篡改规则若拦住某张表，必须让调用方看见，
+            # 否则「清空演示数据」会留下半套数据继续污染报表（联动测试 ⑬）。
+            failed.append(f"{r['tbl']}#{r['row_id']}: {str(e)[:50]}")
+    # 历史版本的 clear() 因账本防删触发器留下过「未登记在 demo_records」的孤儿演示行。
+    # 用户点「清空演示数据」时理应一并清掉；只匹配 [演示] 标记，不触碰真实业务数据。
+    orphan = 0
+    for tbl in ("journal", "voucher_lines"):
+        try:
+            cur = conn.execute(f"DELETE FROM {tbl} WHERE COALESCE(summary, '') LIKE '[演示]%'")
+            orphan += cur.rowcount or 0
+        except Exception as e:
+            failed.append(f"{tbl} 历史残留: {str(e)[:50]}")
     conn.execute("DELETE FROM demo_records")
     set_setting(conn, "demo_loaded", "0")
     conn.commit()
-    return {"ok": True, "删除演示记录": n}
+    out = {"ok": not failed, "删除演示记录": n, "清理历史残留": orphan, "未删除": failed}
+    if failed:
+        out["提示"] = "部分演示数据受账本防篡改规则保护未能删除，请检查「未删除」明细"
+    return out
 
 
 def seed(conn, m, body, qs):

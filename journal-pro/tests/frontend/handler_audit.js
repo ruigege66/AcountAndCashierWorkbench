@@ -18,15 +18,24 @@ function el() {
   };
 }
 
+const els = {};
+const getEl = id => els[id] || (els[id] = el());
+const store = {
+  _d: {},
+  getItem(k) { return Object.prototype.hasOwnProperty.call(this._d, k) ? this._d[k] : null; },
+  setItem(k, v) { this._d[k] = String(v); },
+  removeItem(k) { delete this._d[k]; },
+};
+
 const ctx = {
   console, Math, JSON, Date, Number, String, Object, Array, Boolean, RegExp, Error,
   Promise, parseInt, parseFloat, isNaN, encodeURIComponent, decodeURIComponent,
   setTimeout: () => 0, clearTimeout() {}, setInterval: () => 0, clearInterval() {},
   requestAnimationFrame: () => 0,
   location: { hash: '', search: '' }, history: { replaceState() {} },
-  localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
+  localStorage: store,
   document: {
-    getElementById: () => el(), querySelector: () => el(), querySelectorAll: () => [],
+    getElementById: id => getEl(id), querySelector: () => el(), querySelectorAll: () => [],
     createElement: () => el(), addEventListener() {}, body: el(), head: el(),
     documentElement: {
       _theme: 'light',
@@ -147,7 +156,26 @@ console.log('内联处理函数:', called.size, '| 缺失:', missing.length ? mi
 console.log('侧栏四视角:', navErrors.length ? navErrors.join(' | ') : '全部正常');
 console.log('go/goPage 字面量目标:', gotoTargets.size, '| 未注册:', badTargets.length ? badTargets.join(', ') : '（无）');
 console.log('PAGES 注册页面数:', pages.length);
+// ⑥ 角色下拉必须同时联动「侧栏视角 + 审计操作人 + 下拉选中值」
+let role = null, roleOK = false;
+try {
+  role = JSON.parse(vm.runInContext(`(function(){
+    const orig = render; render = function(){};
+    try {
+      setRole('manager');
+      const a = { pos: currentPosition(), actor: actor(), sel: $('roleSwitch').value };
+      setRole('all');                       // 复原，避免污染其它断言
+      a.restored = currentPosition();
+      return JSON.stringify(a);
+    } finally { render = orig; }
+  })()`, ctx));
+  roleOK = role.pos === 'manager' && role.actor === '总账会计'
+    && role.sel === 'manager' && role.restored === 'all';
+} catch (e) { role = { error: e.message }; }
+
 console.log('按钮跳转验证:', jumpOK ? '成功（S.page: ' + jump.before + ' → ' + jump.after + ', hash: ' + jump.hash + '）'
   : '失败 ' + JSON.stringify(jump));
 console.log('主题切换验证:', themeOK ? '成功（light ↔ dark）' : '失败 ' + JSON.stringify(theme));
-if (errors.length || missing.length || navErrors.length || badTargets.length || !jumpOK || !themeOK) process.exit(1);
+console.log('角色切换验证:', roleOK ? '成功（视角/操作人/下拉三者同步）' : '失败 ' + JSON.stringify(role));
+if (errors.length || missing.length || navErrors.length || badTargets.length
+    || !jumpOK || !themeOK || !roleOK) process.exit(1);

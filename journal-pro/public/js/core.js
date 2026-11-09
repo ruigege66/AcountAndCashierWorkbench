@@ -5,6 +5,9 @@ const S = { meta: null, page: 'dashboard', charts: [], filters: {}, timer: null 
 const money = n => (Number(n) || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const actor = () => $('actor').value || '系统';
+/* 角色 → 审计日志操作人。右上角角色下拉与侧栏岗位视角共用这一份映射，
+   避免手填操作人造成「申请人 = 审批人」被职责分离规则误拦。 */
+const ROLE_ACTORS = { all: '出纳', business: '出纳', manager: '总账会计', executive: '财务总监' };
 const today = () => new Date().toISOString().slice(0, 10);
 const thisMonth = () => today().slice(0, 7);
 

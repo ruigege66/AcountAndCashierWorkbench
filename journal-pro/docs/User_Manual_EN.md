@@ -11,7 +11,7 @@ Journal Pro is a self-hosted accounting + cashier system. Daily flow:
 **business document → approval → automatic voucher → posting → journal → reconciliation → period close → statements → analysis report**.
 
 1. Start: double-click `启动.bat` (Windows) or `python server.py`; open `http://127.0.0.1:8765`.
-2. Set the operator name (top-right) — it is recorded in the audit log.
+2. Pick a **role from the top-right dropdown** — it filters the sidebar by job level and sets the operator name recorded in the audit log (the old free-text field is gone).
 3. Configure base data: **Base Data** → subjects / projects / counterparties / bank accounts.
 4. Record business in **Documents**, approve, then post the generated voucher in **Voucher Management**.
 5. At month end: **Period Close** → checklist → carry profit forward → close the period.
@@ -158,7 +158,7 @@ Click the round **☾ / ☀** button in the top-right corner to switch skins. Yo
 
 - Open `http://127.0.0.1:8765/?theme=dark` to start in dark mode (handy for bookmarking or demos); the URL stays in sync after switching.
 - Chart ticks and legend labels adapt automatically, so figures stay legible in both skins. **All 65 pages and every button behave identically** — only the appearance changes, nothing to re-learn.
-- The `前端 11-08f` tag in the top-right corner is the front-end build version. If the UI looks wrong or a button does nothing, press **Ctrl+F5** first; an older tag means the browser is using a cached page.
+- The `前端 11-09a` tag in the top-right corner is the front-end build version. If the UI looks wrong or a button does nothing, press **Ctrl+F5** first; an older tag means the browser is using a cached page.
 - Printing automatically hides the sidebar, light blooms and buttons, leaving clean white content.
 
 

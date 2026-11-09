@@ -277,11 +277,25 @@ const POSITION_ROLES = [
   { id: 'executive', name: '财务总监 / CFO（决策与监管）' },
 ];
 function currentPosition() { return localStorage.getItem('position') || 'all'; }
-function setPosition(p) { localStorage.setItem('position', p); renderNav(); render(); }
+
+/* 角色统一入口：右上角下拉与侧栏「岗位视角」按钮都走这里。
+   一次切换同时完成三件事：① 记住视角 ② 同步审计日志操作人
+   ③ 重画侧栏与当前页。避免两处各写一套导致显示与实际不一致。 */
+function applyRole(p) {
+  const valid = ['all', 'business', 'manager', 'executive'];
+  const role = valid.indexOf(p) >= 0 ? p : 'all';
+  try { localStorage.setItem('position', role); } catch (e) {}
+  const sel = $('roleSwitch'); if (sel) sel.value = role;
+  const a = $('actor'); if (a) a.value = ROLE_ACTORS[role] || '系统';
+  try { renderNav(); } catch (e) {}
+  try { render(); } catch (e) {}
+}
+function setPosition(p) { applyRole(p); }
+function setRole(p) { applyRole(p); }
+
 /* 侧栏永远是「全部功能」优先：任何视角下所有分组都展开，不折叠内容 */
 function showAllFeatures() {
-  localStorage.setItem('position', 'all');
-  renderNav(); render();
+  applyRole('all');
   try { toast('已显示全部 65 项功能'); } catch (e) {}
 }
 

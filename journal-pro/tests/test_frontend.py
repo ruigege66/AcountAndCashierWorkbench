@@ -129,6 +129,15 @@ def main():
     check("  光影双主题令牌齐备、CSS 平衡、切换链路完整", vars_ok and chain_ok,
           f"令牌={'OK' if vars_ok else '缺失'} / 链路={'OK' if chain_ok else '断裂'} / {len(css)} 字节 CSS")
 
+    # ⑦ 角色下拉：手填「操作员」框已移除，审计操作人由角色自动决定
+    role_ok = ('id="roleSwitch"' in html and 'onchange="setRole(' in html
+               and 'type="hidden" id="actor"' in html and '<input id="actor"' not in html
+               and 'ROLE_ACTORS' in core_js and 'function applyRole' in nav
+               and 'setPosition(p) { applyRole(p); }' in nav
+               and 'ROLE_ACTORS[_role]' in app_js and '.role-pick' in css)
+    check("  角色下拉联动完整（视角/操作人/侧栏三处同步）", role_ok,
+          "下拉+隐藏操作人+applyRole 统一入口")
+
     if not node:
         print("  [--] 未找到 node，动态渲染校验已跳过（静态校验通过即放行）")
 

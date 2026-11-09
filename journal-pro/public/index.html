@@ -121,9 +121,18 @@ try {
       <div class="crumb" id="crumb">工作台</div>
       <div class="right">
         <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="切换到极光深色" aria-label="切换界面主题">☾</button>
-        <span class="build" id="buildTag" title="前端版本：如果这里不是最新日期，说明浏览器用的是旧缓存，请按 Ctrl+F5 强制刷新">前端 11-08f</span>
+        <label class="role-pick" title="切换角色：同时调整侧栏功能分层与审计日志的操作人">
+          <span class="role-ico">👤</span>
+          <select id="roleSwitch" onchange="setRole(this.value)" aria-label="切换当前角色">
+            <option value="all">全部功能（不分层）</option>
+            <option value="business">出纳 / 往来会计</option>
+            <option value="manager">总账会计 / 税务主管</option>
+            <option value="executive">财务总监 / CFO</option>
+          </select>
+        </label>
+        <input type="hidden" id="actor" value="出纳">
+        <span class="build" id="buildTag" title="前端版本：如果这里不是最新日期，说明浏览器用的是旧缓存，请按 Ctrl+F5 强制刷新">前端 11-09a</span>
         <span><span class="dot"></span><span id="dbStatus">数据库连接中…</span></span>
-        <span>操作员</span><input id="actor" value="出纳" title="用于审计日志">
       </div>
     </header>
     <div class="content" id="page"><div class="empty">加载中…</div></div>

@@ -1,13 +1,13 @@
 # 测试指南 / Testing Guide（中英双语）
 
-> 本项目以「测试不过不能合入」为硬性质量闸门。11 套回归、340 项断言，全部基于临时账套，不影响正式数据。
+> 本项目以「测试不过不能合入」为硬性质量闸门。12 套回归、441 项断言，全部基于临时账套，不影响正式数据。
 > Hard quality gate: 10 regression suites / 326 assertions, all against throwaway ledgers.
 
 ## 1. 运行 / Running
 
 ```bash
 cd journal-pro
-python run_tests.py             # 全部 5 套 / all 5 suites（~10s）
+python run_tests.py             # 全部 5 套 / all 5 suites（~15s）
 python run_tests.py core tax    # 指定套件 / selected suites
 python run_tests.py --fast      # 跳过最慢套件 / skip the slowest suite
 run_tests.bat                   # Windows 双击 / Windows double-click
@@ -26,8 +26,11 @@ run_tests.bat                   # Windows 双击 / Windows double-click
 | test_seven | 22 | 七流/岗位/进阶/管控/合规/演示数据载入与清空 / seven flows & demo data |
 | test_workmap | 14 | 11 工作/四流对齐/步骤状态机/断链清单 / four-flow workbenches |
 | test_competency | 31 | 四流图谱同步/覆盖度/追溯 + FIFO 计价/权益法/递延税/租赁/杜邦/EVA/BS/工作流闭环 / four-flow hub & advanced models |
+| test_linkage | 100 | **跨功能业务联动**：18 组链路 / 20 个下游探针，验证「改 A 是否联动 B/C/D」——单据结算→凭证→出纳流水→三表→比率→报告全链路、税务链、计提链、负向隔离、幂等、影响链声明与真实数据对齐、演示数据清空的完全复原 / cross-feature business linkage |
 | test_domains | 31 | 法务/审计/监管/宏观四域：合同超额拦截、或有负债、分层抽样、函证差异、反洗钱、ECL、压力测试、汇率重估 / four domains |
-| test_frontend | 14 | 前端完整性：脚本路径干净且文件存在、JS 语法可编译、Sidebar 覆盖全部注册页面与静态兜底（65 条锚点）、整站启动与 21 页渲染无 `undefined`/`NaN`、**所有按钮处理函数已定义且点击可跳转（四视角侧栏）**、**前端 `api()` 路径全部命中后端路由（无静默 404）**、**光影双主题令牌与切换链路完整、主题切换可翻转 / front-end integrity & light/dark themes** |
+| test_frontend | 15 | 前端完整性：脚本路径干净且文件存在、JS 语法可编译、Sidebar 覆盖全部注册页面与静态兜底（65 条锚点）、整站启动与 21 页渲染无 `undefined`/`NaN`、**所有按钮处理函数已定义且点击可跳转（四视角侧栏）**、**前端 `api()` 路径全部命中后端路由（无静默 404）**、**光影双主题令牌与切换链路完整、主题切换可翻转 / front-end integrity & light/dark themes** |
+
+> `test_linkage` 与其余 11 套的分工：其余 11 套验证「单个功能自己算得对」，`test_linkage` 验证「改了 A，B/C/D 是否跟着变、该变的是否都变、不该变的是否没变」。它用 `probe()` 一次采集 20 个下游模块（账簿、三大报表、现金流、比率、同比环比、经营报告、待办、监控大屏、税负率、增值税申报等）的读数指纹，执行一个上游写操作后再采一次，自动求出被联动影响的模块集合。每个场景使用独立临时账套（出纳流水有防删触发器，不能靠 DELETE 重置）。它曾抓到真实缺陷：演示数据清空时 48 条只删掉 42 条，残留流水污染现金流量表，已由迁移 018 修复。
 
 > `test_frontend` 是「打不开」事故的回归闸门：它静态检查 `index.html` 的 `<script src>` 是否还能落到真实文件（曾因版本号替换写坏成 `core.jsO94119821` 导致全部 JS 404、页面永远停在「加载中…」），并检查侧边栏是否覆盖所有已注册页面（防止功能被"藏起来"被误认为被裁剪）。Node 可用时额外用 `tests/frontend/*.js` 真实执行全部前端脚本并渲染页面；Node 缺失时只跳过动态部分，不阻塞提交。
 

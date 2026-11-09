@@ -4,7 +4,7 @@ A self-hosted accounting + cashier system covering the full bookkeeping cycle:
 **business documents → approval → automatic vouchers → posting → journals → reconciliation → period close → financial statements → business analytics & forecasting**.
 Built with the **Python standard library + SQLite only — zero third-party dependencies**, with built-in internal controls (immutable ledger, audit hash chain, maker-checker segregation).
 
-> Version: V2.16 ｜ Front-end/back-end separated (vanilla JS SPA + REST API) ｜ Database: SQLite (WAL) ｜ Tests: 11 suites, 340 assertions + pre-commit + CI
+> Version: V2.16 ｜ Front-end/back-end separated (vanilla JS SPA + REST API) ｜ Database: SQLite (WAL) ｜ Tests: 12 suites, 441 assertions + pre-commit + CI
 > 中文文档：[README.md](README.md) ｜ [用户手册.md](journal-pro/docs/用户手册.md)
 
 ---
@@ -111,14 +111,15 @@ Click the round **☾ / ☀** button in the top-right corner to switch skins at 
 | **Aurora Dark** | Deep ink-blue base with blue-violet / cyan glow, glass cards, glowing active item | Night use, large displays |
 
 - You can also open `http://127.0.0.1:8765/?theme=dark` directly for the dark skin (handy for bookmarking or demos); the URL stays in sync after switching.
+- **Role dropdown** (👤, top-right): one selection sets both the sidebar feature tier and the operator name written to the audit log. Options: All functions / Cashier & AR-AP / General ledger & tax / CFO. It stays in sync with the sidebar's job-level buttons. The old free-text "operator" field is gone — it was genuinely used by write operations and segregation-of-duties checks, but is now derived from the role so it can't be mistyped.
 - Chart ticks and legend labels adapt to the theme automatically. Both skins were verified across all 65 pages — **the features and buttons are identical, only the appearance changes**.
-- `前端 11-08f` in the top-right corner is the front-end build tag. If the UI looks wrong or a button does nothing, press **Ctrl+F5** first; an older tag means the browser is serving a cached page.
+- `前端 11-09a` in the top-right corner is the front-end build tag. If the UI looks wrong or a button does nothing, press **Ctrl+F5** first; an older tag means the browser is serving a cached page.
 
 ## Tests & Quality Gates
 
 ```bash
 cd journal-pro
-python run_tests.py             # run all 11 regression suites (340 assertions, ~10s)
+python run_tests.py             # run all 12 regression suites (441 assertions, ~15s)
 python run_tests.py core tax    # selected suites only
 run_tests.bat                   # Windows double-click
 ```
@@ -127,7 +128,9 @@ Quality gates so future changes cannot silently break behavior:
 
 1. **Pre-commit hook**: after `git config core.hooksPath .githooks`, every `git commit` runs the suites — **a failing regression blocks the commit** (verified; escape hatch: `--no-verify`);
 2. **CI**: `.github/workflows/ci.yml` runs all suites on every push / PR (Python 3.10 / 3.12 matrix);
-3. All 340 assertions run against throwaway ledgers. See [docs/TESTING.md](docs/TESTING.md).
+3. All 441 assertions run against throwaway ledgers. See [docs/TESTING.md](docs/TESTING.md).
+
+**Cross-feature linkage tests** (`test_linkage.py`, 100 assertions): the other suites check that a single feature computes correctly; this one checks that changing A actually propagates to B/C/D. It snapshots the output fingerprints of 20 downstream modules, runs one upstream write, snapshots again and diffs them. 18 chains are covered: document approval → settlement → auto voucher → cash journal → statements → ratios → report; invoice → VAT → input certification → payable → surtax → burden ratio; bad-debt/depreciation propagation; negative isolation (rejected/void/over-budget/SoD denials pollute nothing); idempotency; declared impact graph vs. real data flow; and full restoration after clearing demo data.
 
 ## Documentation
 

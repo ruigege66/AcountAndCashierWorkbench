@@ -12,6 +12,15 @@ try {
   }
 } catch (e) {}
 
+/* 角色下拉与审计操作人：刷新后按本地偏好还原，不显示成默认第一项 */
+try {
+  const _role = localStorage.getItem('position') || 'all';
+  const _sel = document.getElementById('roleSwitch');
+  if (_sel) _sel.value = _role;
+  const _a = document.getElementById('actor');
+  if (_a) _a.value = ROLE_ACTORS[_role] || '系统';
+} catch (e) {}
+
 /* 地址栏锚点变化 → 渲染对应页面。
    这样即使侧栏的动态渲染出问题，index.html 里的静态入口（<a href="#page">）也点得动。 */
 window.addEventListener('hashchange', function () {
