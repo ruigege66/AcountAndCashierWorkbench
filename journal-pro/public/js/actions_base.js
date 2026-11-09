@@ -94,6 +94,7 @@ async function render() {
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
     }
     try { if (typeof attachHelp === 'function') attachHelp($('page')); } catch (_) {}
+    try { if (typeof refreshMotion === 'function') refreshMotion($('page')); } catch (_) {}
     $('dbStatus').textContent = 'SQLite 已连接 · 迁移 v' + S.meta.migrations.length;
     try { if (typeof highlightNav === 'function') highlightNav(S.page); } catch (_) {}
   } catch (e) {

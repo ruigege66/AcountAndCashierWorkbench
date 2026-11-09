@@ -24,6 +24,9 @@ try {
 /* 功能原理悬浮说明（侧栏、按钮、表头、卡片标题） */
 try { if (typeof initHelp === 'function') initHelp(); } catch (e) {}
 
+/* 流动极光 / 鼠标柔光 / 3D 倾斜 / 旋转描边 */
+try { if (typeof initMotion === 'function') initMotion(); } catch (e) {}
+
 /* 地址栏锚点变化 → 渲染对应页面。
    这样即使侧栏的动态渲染出问题，index.html 里的静态入口（<a href="#page">）也点得动。 */
 window.addEventListener('hashchange', function () {

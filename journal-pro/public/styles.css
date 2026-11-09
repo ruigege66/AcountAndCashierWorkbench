@@ -32,6 +32,8 @@
   --kpi-glow:rgba(99,130,255,.16);
   --orb-1:rgba(99,130,255,.13); --orb-2:rgba(56,189,248,.11); --orb-3:rgba(167,139,250,.12);
   --grid-line:rgba(120,150,220,.038); --glass-hi:rgba(255,255,255,.34);
+  --star-dot:rgba(90,120,200,.5); --spot-color:rgba(99,130,255,.15);
+  --aurora-1:rgba(99,130,255,.17); --aurora-2:rgba(56,189,248,.13); --aurora-3:rgba(167,139,250,.15);
 }
 
 [data-theme="dark"]{
@@ -59,6 +61,8 @@
   --kpi-glow:rgba(99,130,255,.24);
   --orb-1:rgba(99,130,255,.20); --orb-2:rgba(56,189,248,.15); --orb-3:rgba(167,139,250,.17);
   --grid-line:rgba(140,170,255,.055); --glass-hi:rgba(255,255,255,.09);
+  --star-dot:rgba(190,215,255,.7); --spot-color:rgba(99,130,255,.24);
+  --aurora-1:rgba(99,130,255,.27); --aurora-2:rgba(56,189,248,.19); --aurora-3:rgba(167,139,250,.23);
 }
 
 /* ---------- 基础 ---------- */
@@ -235,14 +239,15 @@ header input{width:100px;padding:6px 9px;font-size:12px}
   padding:18px 20px;margin-bottom:16px;position:relative;
   backdrop-filter:blur(22px) saturate(165%);-webkit-backdrop-filter:blur(22px) saturate(165%);
   box-shadow:var(--shadow-sm), inset 0 1px 0 var(--hi), inset 0 0 0 1px var(--glass-hi);
-  transition:transform .28s cubic-bezier(.2,.8,.2,1),box-shadow .28s,border-color .28s,background .35s;
+  transition:transform .2s ease-out,box-shadow .28s,border-color .28s,background .35s;
+  transform:perspective(1000px) translateY(var(--lift,0px)) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));
   animation:fadeUp .42s ease-out}
 .card::before{content:"";position:absolute;left:16px;right:16px;top:0;height:1px;
   background:linear-gradient(90deg,transparent,var(--hi),transparent);pointer-events:none}
 .card::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
-  background:radial-gradient(420px 180px at 100% 0%,rgba(99,130,255,.07),transparent 70%);
+  background:radial-gradient(380px 260px at var(--mx,100%) var(--my,0%),rgba(99,130,255,.14),transparent 70%);
   opacity:0;transition:opacity .3s}
-.card:hover{transform:translateY(-2px);border-color:var(--border-strong);
+.card:hover{--lift:-2px;border-color:var(--border-strong);
   box-shadow:var(--shadow-md), inset 0 1px 0 var(--hi)}
 .card:hover::after{opacity:1}
 .card h3{font-size:14.5px;margin-bottom:14px;font-weight:700;color:var(--text);
@@ -256,17 +261,18 @@ header input{width:100px;padding:6px 9px;font-size:12px}
   padding:15px 18px;position:relative;
   backdrop-filter:blur(20px) saturate(165%);-webkit-backdrop-filter:blur(20px) saturate(165%);
   box-shadow:var(--shadow-sm), inset 0 1px 0 var(--hi), inset 0 0 0 1px var(--glass-hi);
-  transition:transform .28s,box-shadow .28s,background .35s;
+  transition:transform .2s ease-out,box-shadow .28s,background .35s;
+  transform:perspective(1000px) translateY(var(--lift,0px)) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));
   animation:fadeUp .42s ease-out}
 .kpi::before{content:"";position:absolute;right:-26px;top:-38px;width:110px;height:110px;
   border-radius:50%;background:radial-gradient(circle,var(--kpi-glow),transparent 70%);
   pointer-events:none}
 .kpi::after{content:"";position:absolute;left:18px;right:18px;bottom:0;height:2px;
   background:linear-gradient(90deg,var(--primary),transparent);opacity:.35;border-radius:2px}
-.kpi:hover{transform:translateY(-3px);box-shadow:var(--shadow-md), inset 0 1px 0 var(--hi)}
+.kpi:hover{--lift:-3px;box-shadow:var(--shadow-md), inset 0 1px 0 var(--hi)}
 .kpi .label{font-size:12px;color:var(--text2);font-weight:500;letter-spacing:.2px}
-.kpi .value{font-size:23px;font-weight:750;margin-top:6px;color:var(--text);
-  font-variant-numeric:tabular-nums;letter-spacing:-.4px}
+.kpi .value{font-size:clamp(17px,1.35vw,23px);font-weight:750;margin-top:6px;color:var(--text);
+  font-variant-numeric:tabular-nums;letter-spacing:-.4px;white-space:nowrap}
 
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 @media(max-width:980px){.grid2{grid-template-columns:1fr}aside{width:190px}
@@ -484,12 +490,81 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary)
 th.has-help,.card h3.has-help{text-decoration:underline dotted rgba(99,130,255,.5);
   text-underline-offset:3px}
 
+
+/* ---------- 动效层：流动极光 / 星点 / 鼠标柔光 / 旋转描边 ---------- */
+@property --spin{syntax:"<angle>";initial-value:0deg;inherits:false}
+@keyframes spinBorder{to{--spin:360deg}}
+@keyframes auroraFlow{
+  0%{background-position:0% 10%,100% 0%,30% 100%}
+  50%{background-position:70% 40%,35% 70%,85% 25%}
+  100%{background-position:100% 90%,0% 100%,0% 0%}}
+@keyframes starDrift{to{background-position:42px 42px}}
+@keyframes starTwinkle{0%,100%{opacity:.10}50%{opacity:.24}}
+@keyframes lightSweep{
+  0%{transform:translateX(-100%) skewX(-18deg);opacity:0}
+  25%{opacity:1}100%{transform:translateX(100%) skewX(-18deg);opacity:0}}
+@keyframes activeBreathe{0%,100%{opacity:.4}50%{opacity:1}}
+
+#motionLayers{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+#motionLayers > *{position:absolute;pointer-events:none}
+.ml-aurora{inset:-30%;
+  background:
+    linear-gradient(118deg,transparent 28%,var(--aurora-1) 44%,transparent 60%),
+    linear-gradient(62deg,transparent 34%,var(--aurora-2) 50%,transparent 67%),
+    linear-gradient(158deg,transparent 40%,var(--aurora-3) 56%,transparent 73%);
+  background-size:210% 210%,190% 190%,230% 230%;
+  filter:blur(62px);animation:auroraFlow 22s ease-in-out infinite alternate}
+.ml-stars{inset:0;
+  background-image:radial-gradient(circle,var(--star-dot) 0 1px,transparent 1.3px);
+  background-size:42px 42px;opacity:.14;
+  animation:starDrift 46s linear infinite,starTwinkle 6.5s ease-in-out infinite alternate}
+.ml-spot{inset:0;opacity:.85;
+  background:radial-gradient(460px 460px at var(--px,-600px) var(--py,-600px),
+    var(--spot-color),transparent 70%)}
+.ml-progress{inset:0;opacity:0;transform:translateX(-100%);
+  background:linear-gradient(105deg,transparent 32%,rgba(130,160,255,.13) 48%,
+    rgba(190,160,255,.09) 52%,transparent 68%)}
+.ml-progress.run{animation:lightSweep .85s ease-out}
+
+/* 入场揭示：起点 0.86 而非 0，任何情况下内容都不会变透明 */
+.reveal{opacity:.86;transition:opacity .55s ease-out var(--reveal-delay,0ms)}
+.reveal.in{opacity:1}
+
+/* 旋转锥形渐变描边（Agnes 标志性效果）：只在支持 mask 合成时启用，
+   否则完全不渲染，绝不出现实心渐变盖住文字的情况 */
+@supports ((-webkit-mask-composite: xor) or (mask-composite: exclude)) {
+  .page-help.glow-ring::after{content:"";position:absolute;inset:0;border-radius:inherit;
+    padding:1px;pointer-events:none;opacity:.9;
+    background:conic-gradient(from var(--spin),transparent 0%,var(--primary) 16%,
+      #A78BFA 30%,transparent 50%,transparent 100%);
+    -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+    -webkit-mask-composite:xor;
+    mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+    mask-composite:exclude;
+    animation:spinBorder 4.2s linear infinite}
+}
+
+/* 侧栏选中项：呼吸发光条 */
+aside button.active{position:relative}
+aside button.active::after{content:"";position:absolute;left:0;top:18%;bottom:18%;
+  width:3px;border-radius:3px;
+  background:linear-gradient(180deg,transparent,#9DB8FF,transparent);
+  box-shadow:0 0 12px rgba(139,166,255,.9);
+  animation:activeBreathe 2.8s ease-in-out infinite;pointer-events:none}
+
+@media(prefers-reduced-motion:reduce){
+  #motionLayers{display:none!important}
+  .card,.kpi{transform:none!important}
+  .reveal{opacity:1!important}
+  aside button.active::after{animation:none;opacity:.8}
+}
+
 /* ---------- 无障碍 / 打印 ---------- */
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;
     transition-duration:.01ms!important;scroll-behavior:auto!important}}
 @media print{
   aside,header,.toolbar,.btn,.modal-mask,.toast,.theme-toggle,.main::before,
-  .help-tip,.page-help,.nav-hint{display:none!important}
+  .help-tip,.page-help,.nav-hint,#motionLayers{display:none!important}
   .content{padding:0}.card,.kpi{border:none;box-shadow:none;background:#fff;animation:none}
   body{background:#fff;color:#000}}

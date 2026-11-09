@@ -158,7 +158,7 @@ Click the round **☾ / ☀** button in the top-right corner to switch skins. Yo
 
 - Open `http://127.0.0.1:8765/?theme=dark` to start in dark mode (handy for bookmarking or demos); the URL stays in sync after switching.
 - Chart ticks and legend labels adapt automatically, so figures stay legible in both skins. **All 65 pages and every button behave identically** — only the appearance changes, nothing to re-learn.
-- The `前端 11-09b` tag in the top-right corner is the front-end build version. If the UI looks wrong or a button does nothing, press **Ctrl+F5** first; an older tag means the browser is using a cached page.
+- The `前端 11-09c` tag in the top-right corner is the front-end build version. If the UI looks wrong or a button does nothing, press **Ctrl+F5** first; an older tag means the browser is using a cached page.
 - Printing automatically hides the sidebar, light blooms and buttons, leaving clean white content.
 
 ### 30.5 Understanding each feature: guide bars and hover tips
@@ -173,6 +173,17 @@ The sidebar is reorganised into 9 workflow groups, each with an index badge and 
 1 Today's work · 2 Documents & vouchers · 3 Cash & period-end · 4 Statements & analysis · 5 Tax · 6 Data & graphs · 7 Legal / audit / regulatory · 8 External collaboration · 9 System & security.
 
 **All 65 features remain** — only the grouping and order changed.
+
+### 30.6 Interface Motion
+
+The interface now uses the motion language of modern AI product sites:
+
+- Three slowly drifting aurora bands, faint star dust and a cursor-following glow in the background;
+- Card highlights that track the pointer, with a subtle 3D tilt;
+- A rotating conic-gradient border on the page guide bar and a breathing glow on the active sidebar item;
+- A diagonal light sweep when switching pages and a staggered reveal for cards.
+
+No decorative layer blocks clicks or reduces text legibility. If the OS "Reduce motion" setting is enabled, all motion is disabled automatically; printing hides it as well.
 
 
 ---

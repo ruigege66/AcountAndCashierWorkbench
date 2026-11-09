@@ -38,7 +38,7 @@ const ctx = {
   console, Math, JSON, Date, Number, String, Object, Array, Boolean, RegExp, Error,
   Promise, parseInt, parseFloat, isNaN, encodeURIComponent, decodeURIComponent,
   setTimeout: () => 0, clearTimeout() {}, setInterval: () => 0, clearInterval() {},
-  requestAnimationFrame: () => 0,
+  requestAnimationFrame: fn => { try { fn(); } catch (e) {} return 1; },
   location: { hash: '', search: '' }, history: { replaceState() {} },
   localStorage: store,
   document: {
@@ -65,7 +65,7 @@ vm.createContext(ctx);
 // 按 index.html 顺序
 const FILES = ['core.js', 'pages_base.js', 'pages_v25.js', 'pages_v26.js', 'pages_v28.js',
   'actions_base.js', 'actions_v25.js', 'actions_v26.js', 'actions_v28.js',
-  'pages_work.js', 'help.js', 'app.js'];
+  'pages_work.js', 'help.js', 'motion.js', 'app.js'];
 const errors = [];
 for (const f of FILES) {
   try {
@@ -222,6 +222,25 @@ try {
 } catch (e) { hoverInfo = e.message; }
 
 console.log('功能说明体系:', helpOK ? '完整（' + helpInfo + '）' : '失败 ' + helpInfo);
+// ⑨ 动效引擎：函数齐备，且真实 pointermove 会写入卡片 3D 倾斜 / 局部高光变量
+let motionOK = false, motionInfo = '';
+try {
+  const fns = ['initMotion', 'refreshMotion', 'pulseSweep', 'motionReduced']
+    .every(f => vm.runInContext('typeof ' + f, ctx) === 'function');
+  const fakeCard = {
+    getBoundingClientRect: () => ({ left: 0, top: 0, width: 200, height: 100 }),
+    style: { _v: {}, setProperty(k, v) { this._v[k] = v; } },
+    classList: { add() {}, remove() {}, contains() { return false; } },
+  };
+  const fakeTarget = { closest: () => fakeCard };
+  (listeners['pointermove'] || []).forEach(fn => fn({ clientX: 150, clientY: 25, target: fakeTarget }));
+  const v = fakeCard.style._v;
+  motionOK = fns && v['--rx'] !== undefined && v['--ry'] !== undefined
+    && v['--mx'] !== undefined && v['--my'] !== undefined;
+  motionInfo = `组件 ${fns ? '齐备' : '缺失'} / --mx=${v['--mx']} --rx=${v['--rx']}`;
+} catch (e) { motionInfo = e.message; }
+
 console.log('悬浮说明弹出:', hoverOK ? '成功（含计算方式）' : '失败 ' + hoverInfo);
+console.log('动效引擎:', motionOK ? '正常（' + motionInfo + '）' : '失败 ' + motionInfo);
 if (errors.length || missing.length || navErrors.length || badTargets.length
-    || !jumpOK || !themeOK || !roleOK || !helpOK || !hoverOK) process.exit(1);
+    || !jumpOK || !themeOK || !roleOK || !helpOK || !hoverOK || !motionOK) process.exit(1);

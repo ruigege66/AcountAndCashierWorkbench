@@ -4,7 +4,7 @@ A self-hosted accounting + cashier system covering the full bookkeeping cycle:
 **business documents → approval → automatic vouchers → posting → journals → reconciliation → period close → financial statements → business analytics & forecasting**.
 Built with the **Python standard library + SQLite only — zero third-party dependencies**, with built-in internal controls (immutable ledger, audit hash chain, maker-checker segregation).
 
-> Version: V2.16 ｜ Front-end/back-end separated (vanilla JS SPA + REST API) ｜ Database: SQLite (WAL) ｜ Tests: 12 suites, 442 assertions + pre-commit + CI
+> Version: V2.16 ｜ Front-end/back-end separated (vanilla JS SPA + REST API) ｜ Database: SQLite (WAL) ｜ Tests: 12 suites, 443 assertions + pre-commit + CI
 > 中文文档：[README.md](README.md) ｜ [用户手册.md](journal-pro/docs/用户手册.md)
 
 ---
@@ -114,15 +114,16 @@ Click the round **☾ / ☀** button in the top-right corner to switch skins at 
 - **Reorganised sidebar**: 9 groups following the accounting workflow (today's work → documents & vouchers → cash & period-end → statements & analysis → tax → data & graphs → professional domains → external collaboration → system). Each group has an index and a count; all 65 features remain.
 - **Inline explanations**: every page starts with a "function guide" bar that expands to show formulas and data sources; hovering any sidebar item, button, table header or card title pops up its meaning and calculation (53 metric rules + 65 page guides). Hover "tax burden" to see `VAT payable ÷ P&L revenue × 100%`.
 - **Atmospheric background**: a barely-there grid, slowly drifting light orbs and stronger frosted-glass blur — translucent and layered, while keeping text legible in both themes.
+- **Motion** (inspired by product sites such as Agnes AI): three drifting aurora bands, a cursor-following glow, card highlights that track the pointer with a subtle ±3° 3D tilt, a rotating conic-gradient border on the guide bar, a breathing glow on the active sidebar item, faint star dust, and a diagonal light sweep on page changes. Pure native CSS/JS, zero dependencies; every decorative layer ignores pointer events, and all motion is disabled when the OS "reduce motion" setting is on.
 - **Role dropdown** (👤, top-right): one selection sets both the sidebar feature tier and the operator name written to the audit log. Options: All functions / Cashier & AR-AP / General ledger & tax / CFO. It stays in sync with the sidebar's job-level buttons. The old free-text "operator" field is gone — it was genuinely used by write operations and segregation-of-duties checks, but is now derived from the role so it can't be mistyped.
 - Chart ticks and legend labels adapt to the theme automatically. Both skins were verified across all 65 pages — **the features and buttons are identical, only the appearance changes**.
-- `前端 11-09b` in the top-right corner is the front-end build tag. If the UI looks wrong or a button does nothing, press **Ctrl+F5** first; an older tag means the browser is serving a cached page.
+- `前端 11-09c` in the top-right corner is the front-end build tag. If the UI looks wrong or a button does nothing, press **Ctrl+F5** first; an older tag means the browser is serving a cached page.
 
 ## Tests & Quality Gates
 
 ```bash
 cd journal-pro
-python run_tests.py             # run all 12 regression suites (442 assertions, ~15s)
+python run_tests.py             # run all 12 regression suites (443 assertions, ~15s)
 python run_tests.py core tax    # selected suites only
 run_tests.bat                   # Windows double-click
 ```
@@ -131,7 +132,7 @@ Quality gates so future changes cannot silently break behavior:
 
 1. **Pre-commit hook**: after `git config core.hooksPath .githooks`, every `git commit` runs the suites — **a failing regression blocks the commit** (verified; escape hatch: `--no-verify`);
 2. **CI**: `.github/workflows/ci.yml` runs all suites on every push / PR (Python 3.10 / 3.12 matrix);
-3. All 442 assertions run against throwaway ledgers. See [docs/TESTING.md](docs/TESTING.md).
+3. All 443 assertions run against throwaway ledgers. See [docs/TESTING.md](docs/TESTING.md).
 
 **Cross-feature linkage tests** (`test_linkage.py`, 100 assertions): the other suites check that a single feature computes correctly; this one checks that changing A actually propagates to B/C/D. It snapshots the output fingerprints of 20 downstream modules, runs one upstream write, snapshots again and diffs them. 18 chains are covered: document approval → settlement → auto voucher → cash journal → statements → ratios → report; invoice → VAT → input certification → payable → surtax → burden ratio; bad-debt/depreciation propagation; negative isolation (rejected/void/over-budget/SoD denials pollute nothing); idempotency; declared impact graph vs. real data flow; and full restoration after clearing demo data.
 
