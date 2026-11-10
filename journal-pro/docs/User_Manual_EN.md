@@ -158,7 +158,7 @@ Click the round **☾ / ☀** button in the top-right corner to switch skins. Yo
 
 - Open `http://127.0.0.1:8765/?theme=dark` to start in dark mode (handy for bookmarking or demos); the URL stays in sync after switching.
 - Chart ticks and legend labels adapt automatically, so figures stay legible in both skins. **All 65 pages and every button behave identically** — only the appearance changes, nothing to re-learn.
-- The `前端 11-09d` tag in the top-right corner is the front-end build version. If the UI looks wrong or a button does nothing, press **Ctrl+F5** first; an older tag means the browser is using a cached page.
+- The `前端 11-09e` tag in the top-right corner is the front-end build version. If the UI looks wrong or a button does nothing, press **Ctrl+F5** first; an older tag means the browser is using a cached page.
 - Printing automatically hides the sidebar, light blooms and buttons, leaving clean white content.
 
 ### 30.5 Understanding each feature: guide bars and hover tips
@@ -174,17 +174,16 @@ The sidebar is reorganised into 9 workflow groups, each with an index badge and 
 
 **All 65 features remain** — only the grouping and order changed.
 
-### 30.6 Visuals and Smoothness
+### 30.6 Plain Interface
 
-The interface keeps its premium look but **prioritises smoothness**:
+The visual effects made the browser sluggish, so they are **all switched off** and the interface is back to a clean, plain look:
 
-- Static aurora gradients, a faint grid, star dust, glass highlight edges and a coloured gradient border remain, so the layered look is intact;
-- Motion appears only on interaction: a subtle hover lift/sheen, one diagonal sweep when switching pages, and a light staggered card reveal;
-- The earlier continuously drifting bands, cursor-following glow, 3D card tilt and rotating border forced constant repaints while scrolling and have been switched to static effects. A resting page now triggers almost no repainting;
-- With the OS "Reduce motion" setting on, the decorative layer is not created at all; printing hides it too;
-- No decorative layer blocks clicks or fades text.
+- Plain background, white cards with a thin border — no grid, aurora, star dust, blur or animation;
+- **No feature was removed**: the 9 sidebar groups, the per-page 💡 guide bar, hover formulas, the role dropdown and light/dark themes all still work;
+- Scrolling, page switching and data entry are noticeably smoother;
+- Printing hides the sidebar and buttons automatically.
 
-The "performance budget" check in `tests/test_frontend.py` prevents blur filters and looping animations from being reintroduced.
+A single "plain mode" override block in the stylesheet can be deleted to restore the visual layer; a regression guard in `tests/test_frontend.py` prevents decorations from being reintroduced.
 
 ---
 

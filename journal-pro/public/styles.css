@@ -540,6 +540,36 @@ aside button.active::after{content:"";position:absolute;left:0;top:18%;bottom:18
   aside button.active::after{animation:none;opacity:.8}
 }
 
+
+/* ==========================================================================
+   简洁模式（回退全部装饰性视觉效果）
+   用户反馈界面仍卡顿，这里一次性关闭所有装饰层、渐变背景、动画与光泽，
+   回到朴素干净的功能界面。本段用 @media screen 包裹，不影响打印样式；
+   只覆盖装饰，不改动任何功能性样式（布局 / 表格 / 表单 / 说明浮层 / 打印）。
+   若将来想恢复光影，删除本段即可，前面的样式规则都还在。
+   ========================================================================== */
+@media screen{
+  body{background:var(--bg)!important}
+  .main::before,#motionLayers,
+  .card::before,.card::after,.kpi::before,.kpi::after,
+  .page-help::before,.page-help::after,.btn-p::after,
+  #navTree summary::after,aside button.active::after{display:none!important}
+  .card,.kpi,.page-head,.page-help,.modal,.help-tip,.banner,
+  .theme-toggle,.btn,.reveal{animation:none!important;transition:none!important;transform:none!important}
+  .card,.kpi,.page-help{background:var(--card-solid)!important;
+    border:1px solid var(--border)!important;
+    box-shadow:0 1px 3px rgba(20,40,80,.07)!important}
+  .card:hover,.kpi:hover{transform:none!important;
+    box-shadow:0 2px 8px rgba(20,40,80,.12)!important}
+  .btn-p:hover{filter:none!important;transform:none!important}
+  .theme-toggle:hover{transform:none!important}
+  .reveal{opacity:1!important}
+  .page-help{border-left:3px solid var(--primary)!important}
+  .help-tip{box-shadow:var(--shadow-sm)!important}
+  header .crumb::before{box-shadow:none!important}
+  #navTree summary .ng-idx,#navTree summary .ng-count{box-shadow:none!important}
+}
+
 /* ---------- 无障碍 / 打印 ---------- */
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;

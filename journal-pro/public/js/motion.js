@@ -12,43 +12,13 @@ function motionReduced() {
 }
 
 function initMotion() {
-  if (typeof document === 'undefined' || motionReduced()) return;
-  try {
-    let layers = document.getElementById('motionLayers');
-    if (!layers) {
-      layers = document.createElement('div');
-      layers.id = 'motionLayers';
-      layers.setAttribute('aria-hidden', 'true');
-      layers.innerHTML = '<div class="ml-aurora"></div><div class="ml-stars"></div>'
-        + '<div class="ml-spot"></div><div class="ml-progress"></div>';
-      // 挂在 .main 内：其层叠上下文保证装饰层落在 header/content 之下
-      const host = document.querySelector ? document.querySelector('.main') : null;
-      (host || document.body).appendChild(layers);
-    }
-  } catch (e) {}
+  // 简洁模式：不创建任何装饰层。保留函数签名以兼容现有调用点与回归断言。
 }
 
 /* 页面重绘后：挂静态渐变描边、入场揭示，并扫一道一次性斜光。
    没有指针移动监听，滚动时不做任何逐帧计算。 */
 function refreshMotion(root) {
-  if (typeof document === 'undefined' || motionReduced()) return;
-  pulseSweep();
-  if (!root || typeof root.querySelectorAll !== 'function') return;
-  try {
-    const nodes = Array.prototype.slice.call(root.querySelectorAll('.card,.kpi,.page-help'));
-    nodes.forEach(function (n, i) {
-      try {
-        if (n.classList && n.classList.contains('page-help')) n.classList.add('glow-ring');
-        // 无 IntersectionObserver 时不加 reveal 类：内容始终以正常状态呈现
-        if (typeof IntersectionObserver === 'undefined' || !_motionObserver) return;
-        if (n.classList && !n.classList.contains('motion-bound')) {
-          n.classList.add('motion-bound', 'reveal');
-          n.style.setProperty('--reveal-delay', (Math.min(i, 8) * 45) + 'ms');
-          _motionObserver.observe(n);
-        }
-      } catch (e) {}
-    });
-  } catch (e) {}
+  // 简洁模式：不挂揭示类、不触发扫光，页面重绘时零额外工作。
 }
 
 let _motionObserver = null;
@@ -66,12 +36,5 @@ if (typeof IntersectionObserver !== 'undefined') {
 }
 
 function pulseSweep() {
-  if (typeof document === 'undefined' || motionReduced()) return;
-  try {
-    const bar = document.querySelector ? document.querySelector('.ml-progress') : null;
-    if (!bar || !bar.classList) return;
-    bar.classList.remove('run');
-    void bar.offsetWidth;              // 强制重排以重启动画
-    bar.classList.add('run');
-  } catch (e) {}
+  // 简洁模式：无扫光动画。
 }

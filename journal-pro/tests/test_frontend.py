@@ -160,15 +160,16 @@ def main():
     no_loops = not any(x in css for x in ("auroraFlow", "starDrift", "orbDrift",
                                           "activeBreathe", "starTwinkle"))
     no_pointer_loop = "addEventListener('pointermove'" not in motion_js
+    no_layer = "createElement" not in motion_js and "motionLayers" not in motion_js
+    simple_mode = "简洁模式" in css and "@media screen" in css
     motion_ok = ('/js/motion.js' in html
                  and all(x in motion_js for x in ('function initMotion', 'function refreshMotion',
                                                   'function pulseSweep', 'function motionReduced'))
                  and 'initMotion()' in app_js and "refreshMotion($('page'))" in act_js
-                 and all(x in css for x in ('.ml-aurora', '.ml-stars', '.ml-spot',
-                                            '.reveal', 'lightSweep', 'prefers-reduced-motion'))
-                 and no_blur and no_loops and no_pointer_loop)
-    check("  性能预算达标（无 blur/循环动画/逐帧监听，光影仍在）", motion_ok,
-          f"无昂贵滤镜 {no_blur} / 无全屏循环 {no_loops} / 无逐帧监听 {no_pointer_loop}")
+                 and all(x in css for x in ('.reveal', 'prefers-reduced-motion'))
+                 and no_blur and no_loops and no_pointer_loop and no_layer and simple_mode)
+    check("  简洁模式生效（装饰层已回退，功能样式保留）", motion_ok,
+          f"不建层 {no_layer} / 覆盖段 {simple_mode} / 无滤镜 {no_blur} / 无循环动画 {no_loops}")
 
     if not node:
         print("  [--] 未找到 node，动态渲染校验已跳过（静态校验通过即放行）")

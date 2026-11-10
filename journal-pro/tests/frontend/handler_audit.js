@@ -222,7 +222,7 @@ try {
 } catch (e) { hoverInfo = e.message; }
 
 console.log('功能说明体系:', helpOK ? '完整（' + helpInfo + '）' : '失败 ' + helpInfo);
-// ⑨ 性能预算：动效保持轻量——组件齐备、无逐帧 pointermove 监听、无昂贵 CSS 滤镜
+// ⑨ 简洁模式：视觉装饰已回退——不建层、不跑动画、无昂贵滤镜
 let motionOK = false, motionInfo = '';
 try {
   const fns = ['initMotion', 'refreshMotion', 'pulseSweep', 'motionReduced']
@@ -230,15 +230,16 @@ try {
   const src = read('public/js/motion.js');
   const css = read('public/styles.css');
   const noPointerLoop = !src.includes("addEventListener('pointermove'");
+  const noLayer = !src.includes('createElement') && !src.includes('motionLayers');
+  const simpleMode = css.includes('简洁模式') && css.includes('@media screen');
   const noBlur = !/backdrop-filter|filter:blur\(|background-attachment:fixed|@property --spin/.test(css);
   const noFullscreenLoops = !/auroraFlow|starDrift|orbDrift|activeBreathe|starTwinkle/.test(css);
-  motionOK = fns && noPointerLoop && noBlur && noFullscreenLoops;
-  motionInfo = `组件 ${fns ? '齐备' : '缺失'} / 无逐帧监听 ${noPointerLoop} / 无昂贵滤镜 ${noBlur} / 无全屏循环动画 ${noFullscreenLoops}`;
-  // 组件仍需在真实环境可调用（不抛异常）
-  vm.runInContext('initMotion(); pulseSweep();', ctx);
+  motionOK = fns && noPointerLoop && noLayer && simpleMode && noBlur && noFullscreenLoops;
+  motionInfo = `组件 ${fns ? '齐备' : '缺失'} / 不建层 ${noLayer} / 简洁模式 ${simpleMode} / 无逐帧监听 ${noPointerLoop} / 无昂贵滤镜 ${noBlur}`;
+  vm.runInContext('initMotion(); pulseSweep();', ctx);   // 调用不抛异常
 } catch (e) { motionInfo = e.message; motionOK = false; }
 
 console.log('悬浮说明弹出:', hoverOK ? '成功（含计算方式）' : '失败 ' + hoverInfo);
-console.log('性能预算:', motionOK ? '达标（' + motionInfo + '）' : '失败 ' + motionInfo);
+console.log('简洁模式:', motionOK ? '生效（' + motionInfo + '）' : '失败 ' + motionInfo);
 if (errors.length || missing.length || navErrors.length || badTargets.length
     || !jumpOK || !themeOK || !roleOK || !helpOK || !hoverOK || !motionOK) process.exit(1);
