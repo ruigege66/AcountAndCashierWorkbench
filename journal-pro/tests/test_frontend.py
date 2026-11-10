@@ -148,21 +148,27 @@ def main():
                                               'function attachHelp', 'function initHelp'))
                and 'pageHelpHtml(S.page)' in act_js and "attachHelp($('page'))" in act_js
                and 'initHelp()' in app_js
-               and all(x in css for x in ('.page-help', '.help-tip', '.nav-hint', 'orbDrift')))
+               and all(x in css for x in ('.page-help', '.help-tip', '.nav-hint', '--orb-1')))
     check("  功能说明体系与半透明光影背景完整", help_ok,
           "9 组重排 / 65 条说明 / 页面提示条 / 悬浮浮层 / 漂浮光球")
 
-    # ⑨ 动效引擎：极光 / 星点 / 鼠标柔光 / 3D 倾斜 / 旋转描边 / 降级保护
+    # ⑨ 性能预算：用户反馈「浏览器太卡」后，动效改为全静态光影 + 一次性交互反馈。
+    #    这里硬性禁止把昂贵效果加回来（backdrop-filter / blur / 全屏循环动画 / 逐帧监听）。
     motion_js = read(os.path.join(ROOT, "public", "js", "motion.js"))
+    no_blur = not any(x in css for x in ("backdrop-filter", "filter:blur(",
+                                         "background-attachment:fixed", "@property --spin"))
+    no_loops = not any(x in css for x in ("auroraFlow", "starDrift", "orbDrift",
+                                          "activeBreathe", "starTwinkle"))
+    no_pointer_loop = "addEventListener('pointermove'" not in motion_js
     motion_ok = ('/js/motion.js' in html
                  and all(x in motion_js for x in ('function initMotion', 'function refreshMotion',
                                                   'function pulseSweep', 'function motionReduced'))
                  and 'initMotion()' in app_js and "refreshMotion($('page'))" in act_js
-                 and all(x in css for x in ('@property --spin', 'auroraFlow', '.ml-aurora',
-                                            '.ml-stars', '.ml-spot', 'activeBreathe',
-                                            '.reveal', 'prefers-reduced-motion')))
-    check("  动效引擎完整（流动极光/柔光/倾斜/旋转描边/降级）", motion_ok,
-          "零依赖 / 装饰层不拦截点击 / reduced-motion 全关")
+                 and all(x in css for x in ('.ml-aurora', '.ml-stars', '.ml-spot',
+                                            '.reveal', 'lightSweep', 'prefers-reduced-motion'))
+                 and no_blur and no_loops and no_pointer_loop)
+    check("  性能预算达标（无 blur/循环动画/逐帧监听，光影仍在）", motion_ok,
+          f"无昂贵滤镜 {no_blur} / 无全屏循环 {no_loops} / 无逐帧监听 {no_pointer_loop}")
 
     if not node:
         print("  [--] 未找到 node，动态渲染校验已跳过（静态校验通过即放行）")

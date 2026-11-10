@@ -222,25 +222,23 @@ try {
 } catch (e) { hoverInfo = e.message; }
 
 console.log('功能说明体系:', helpOK ? '完整（' + helpInfo + '）' : '失败 ' + helpInfo);
-// ⑨ 动效引擎：函数齐备，且真实 pointermove 会写入卡片 3D 倾斜 / 局部高光变量
+// ⑨ 性能预算：动效保持轻量——组件齐备、无逐帧 pointermove 监听、无昂贵 CSS 滤镜
 let motionOK = false, motionInfo = '';
 try {
   const fns = ['initMotion', 'refreshMotion', 'pulseSweep', 'motionReduced']
     .every(f => vm.runInContext('typeof ' + f, ctx) === 'function');
-  const fakeCard = {
-    getBoundingClientRect: () => ({ left: 0, top: 0, width: 200, height: 100 }),
-    style: { _v: {}, setProperty(k, v) { this._v[k] = v; } },
-    classList: { add() {}, remove() {}, contains() { return false; } },
-  };
-  const fakeTarget = { closest: () => fakeCard };
-  (listeners['pointermove'] || []).forEach(fn => fn({ clientX: 150, clientY: 25, target: fakeTarget }));
-  const v = fakeCard.style._v;
-  motionOK = fns && v['--rx'] !== undefined && v['--ry'] !== undefined
-    && v['--mx'] !== undefined && v['--my'] !== undefined;
-  motionInfo = `组件 ${fns ? '齐备' : '缺失'} / --mx=${v['--mx']} --rx=${v['--rx']}`;
-} catch (e) { motionInfo = e.message; }
+  const src = read('public/js/motion.js');
+  const css = read('public/styles.css');
+  const noPointerLoop = !src.includes("addEventListener('pointermove'");
+  const noBlur = !/backdrop-filter|filter:blur\(|background-attachment:fixed|@property --spin/.test(css);
+  const noFullscreenLoops = !/auroraFlow|starDrift|orbDrift|activeBreathe|starTwinkle/.test(css);
+  motionOK = fns && noPointerLoop && noBlur && noFullscreenLoops;
+  motionInfo = `组件 ${fns ? '齐备' : '缺失'} / 无逐帧监听 ${noPointerLoop} / 无昂贵滤镜 ${noBlur} / 无全屏循环动画 ${noFullscreenLoops}`;
+  // 组件仍需在真实环境可调用（不抛异常）
+  vm.runInContext('initMotion(); pulseSweep();', ctx);
+} catch (e) { motionInfo = e.message; motionOK = false; }
 
 console.log('悬浮说明弹出:', hoverOK ? '成功（含计算方式）' : '失败 ' + hoverInfo);
-console.log('动效引擎:', motionOK ? '正常（' + motionInfo + '）' : '失败 ' + motionInfo);
+console.log('性能预算:', motionOK ? '达标（' + motionInfo + '）' : '失败 ' + motionInfo);
 if (errors.length || missing.length || navErrors.length || badTargets.length
     || !jumpOK || !themeOK || !roleOK || !helpOK || !hoverOK || !motionOK) process.exit(1);
