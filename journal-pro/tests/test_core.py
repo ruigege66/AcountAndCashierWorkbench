@@ -199,6 +199,32 @@ def main():
     check("说明书含可配置规则与默认值", "rules" in rb and "defaults" in rb["rules"])
     check("说明书含数据血缘", len(rb["lineage"]) >= 6)
 
+    print("\n--- 11. 索引清理与每日本地备份 ---")
+    check("迁移 019 已应用", versions[-1] >= 19, str(versions[-1]))
+    jidx = [r[0] for r in conn.execute(
+        "SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='journal'")]
+    dup = [x for x in jidx if x.endswith('journal_date')]
+    check("journal_date 重复索引已清理为 1 条", len(dup) == 1, str(dup))
+    vidx = [r[0] for r in conn.execute(
+        "SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='vouchers'")]
+    check("vouchers 冗余单列索引已清理", 'idx_vouchers_period' not in vidx, str(vidx))
+
+    btmp = tempfile.mkdtemp(prefix="journal_backup_test_")
+    orig_dir = server.BACKUP_DIR
+    try:
+        server.BACKUP_DIR = btmp
+        for i in range(1, 10):
+            with open(os.path.join(btmp, f"backup-2026-10-{i:02d}.json"), "w", encoding="utf-8") as bf:
+                bf.write("{}")
+        bp = server.daily_backup()
+        names = sorted(os.listdir(btmp))
+        check("每日本地备份生成并保留最近 7 份", bp is not None and len(names) == 7,
+              f"{len(names)} 份 / {os.path.basename(bp) if bp else 'None'}")
+        check("同日重复启动不重复备份（幂等）", server.daily_backup() is None)
+    finally:
+        server.BACKUP_DIR = orig_dir
+        shutil.rmtree(btmp, ignore_errors=True)
+
     conn.close()
     print(f"\n{'=' * 56}\n通过 {len(PASS)} 项，失败 {len(FAIL)} 项")
     if FAIL:

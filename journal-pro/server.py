@@ -3010,11 +3010,55 @@ class Server(ThreadingHTTPServer):
         super().handle_error(request, client_address)
 
 
+# ---------------- 每日本地备份 ----------------
+BACKUP_DIR = os.path.join(BASE, "data", "backups")
+BACKUP_KEEP = 7
+
+
+def daily_backup():
+    """服务启动当天生成一份 JSON 备份，保留最近 7 份。
+
+    只在启动瞬间执行一次：没有后台线程、没有定时器、运行时零开销。
+    用临时文件 + os.replace 原子落盘，避免半截备份；失败只打印一行，
+    绝不能阻止服务启动。备份目录不进版本库。
+    """
+    try:
+        os.makedirs(BACKUP_DIR, exist_ok=True)
+        target = os.path.join(BACKUP_DIR, "backup-" + datetime.now().strftime("%Y-%m-%d") + ".json")
+        if os.path.exists(target):
+            return None
+        conn = connect()
+        try:
+            payload = {"_format": "journal-pro-backup", "_version": 1,
+                       "_exported_at": now(),
+                       "tables": {t: q(conn, f"SELECT * FROM {t}") for t in TABLES}}
+        finally:
+            conn.close()
+        tmp = target + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False, default=str)
+        os.replace(tmp, target)
+        files = sorted(x for x in os.listdir(BACKUP_DIR)
+                       if x.startswith("backup-") and x.endswith(".json"))
+        for old in files[:-BACKUP_KEEP]:
+            try:
+                os.remove(os.path.join(BACKUP_DIR, old))
+            except OSError:
+                pass
+        return target
+    except Exception as e:
+        print(f"[journal-pro] daily backup skipped: {e}", flush=True)
+        return None
+
+
 def main():
     from app.bootstrap import start
     container = start()          # 组合根：装配依赖、注册全部控制器
     versions = migrate()
     print(f"[journal-pro] migrations applied: {versions}", flush=True)
+    bp = daily_backup()
+    if bp:
+        print(f"[journal-pro] daily backup: {os.path.basename(bp)}", flush=True)
     print(f"[journal-pro] routes: {len(container.router)} | serving on 0.0.0.0:{PORT}", flush=True)
     try:
         Server(("0.0.0.0", PORT), Handler).serve_forever()

@@ -1,6 +1,6 @@
 # 测试指南 / Testing Guide（中英双语）
 
-> 本项目以「测试不过不能合入」为硬性质量闸门。12 套回归、444 项断言，全部基于临时账套，不影响正式数据。
+> 本项目以「测试不过不能合入」为硬性质量闸门。12 套回归、449 项断言，全部基于临时账套，不影响正式数据。
 > Hard quality gate: 10 regression suites / 326 assertions, all against throwaway ledgers.
 
 ## 1. 运行 / Running
@@ -19,7 +19,7 @@ run_tests.bat                   # Windows 双击 / Windows double-click
 |---|---|---|
 | test_reports | 34 | 报表口径（跨年累计、期初不累加、留抵不重复、三大勾稽）+ 接口冒烟 / report rigor + API smoke |
 | test_features | 48 | V2.5 全部功能读写与防重复 / all V2.5 features incl. idempotency |
-| test_core | 44 | 统一内核：计算精度、规则热更新、影响链、联动传导、在线报告 / unified kernel & integration |
+| test_core | 49 | 统一内核：计算精度、规则热更新、影响链、联动传导、在线报告、**迁移 019 索引去重 / 每日备份幂等与保留策略** |
 | test_v28 | 47 | V2.8 功能与安全开关（默认只观测）/ V2.8 features & security defaults |
 | test_tax | 30 | 税务两位小数精度、个税累计预扣、小微判定、税负率两点控制 / tax precision & IIT |
 | test_gateway | 25 | 开票/付款文件桥梁、结果回传查重、多格式对账单、凭据存储拒绝 / external-system bridge |
