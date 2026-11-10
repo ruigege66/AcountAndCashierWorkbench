@@ -240,6 +240,15 @@ try {
 } catch (e) { motionInfo = e.message; motionOK = false; }
 
 console.log('悬浮说明弹出:', hoverOK ? '成功（含计算方式）' : '失败 ' + hoverInfo);
+// ⑩ 静默失败可观测性：warn 必须存在，且所有 JS 不允许再有空 catch
+let warnOK = false, warnInfo = '';
+try {
+  const emptyCatch = FILES.filter(f => /catch \(\w+\) \{\s*\}/.test(read('public/js/' + f)));
+  warnOK = vm.runInContext('typeof warn', ctx) === 'function' && emptyCatch.length === 0;
+  warnInfo = `warn ${warnOK ? '可用' : '缺失'} / 空 catch 文件 ${emptyCatch.length}`;
+} catch (e) { warnInfo = e.message; }
+
 console.log('简洁模式:', motionOK ? '生效（' + motionInfo + '）' : '失败 ' + motionInfo);
+console.log('异常可观测性:', warnOK ? '达标（' + warnInfo + '）' : '失败 ' + warnInfo);
 if (errors.length || missing.length || navErrors.length || badTargets.length
-    || !jumpOK || !themeOK || !roleOK || !helpOK || !hoverOK || !motionOK) process.exit(1);
+    || !jumpOK || !themeOK || !roleOK || !helpOK || !hoverOK || !motionOK || !warnOK) process.exit(1);

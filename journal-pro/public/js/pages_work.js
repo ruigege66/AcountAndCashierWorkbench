@@ -284,11 +284,11 @@ function currentPosition() { return localStorage.getItem('position') || 'all'; }
 function applyRole(p) {
   const valid = ['all', 'business', 'manager', 'executive'];
   const role = valid.indexOf(p) >= 0 ? p : 'all';
-  try { localStorage.setItem('position', role); } catch (e) {}
+  try { localStorage.setItem('position', role); } catch (e) { warn(e); }
   const sel = $('roleSwitch'); if (sel) sel.value = role;
   const a = $('actor'); if (a) a.value = ROLE_ACTORS[role] || '系统';
-  try { renderNav(); } catch (e) {}
-  try { render(); } catch (e) {}
+  try { renderNav(); } catch (e) { warn(e); }
+  try { render(); } catch (e) { warn(e); }
 }
 function setPosition(p) { applyRole(p); }
 function setRole(p) { applyRole(p); }
@@ -296,7 +296,7 @@ function setRole(p) { applyRole(p); }
 /* 侧栏永远是「全部功能」优先：任何视角下所有分组都展开，不折叠内容 */
 function showAllFeatures() {
   applyRole('all');
-  try { toast('已显示全部 65 项功能'); } catch (e) {}
+  try { toast('已显示全部 65 项功能'); } catch (e) { warn(e); }
 }
 
 function navTreeHtml() {
@@ -448,39 +448,37 @@ const NAV_HELP = {
 /* ==================== 今日工作台（行动导向首页） ==================== */
 async function todayDashboard() {
   const pos = currentPosition();
+  const more = pos !== 'business';
+  // 7 个数据请求一次性并行发出：过去逐个 await，首屏要等满 7 次串行往返。
+  // 单个接口失败只影响自己那张卡片，并留下控制台线索，不再静默吞掉。
+  const safe = (p, tag) => p.catch(e => { warn(e, tag); return null; });
+  const skip = Promise.resolve(null);
+  const [t, w, d, g, a, c, cov] = await Promise.all([
+    safe(api('/api/todo'), '待办事项'),
+    safe(api('/api/work/runs'), '进行中的工作流'),
+    safe(api('/api/work/demo/status'), '演示数据状态'),
+    more ? safe(api('/api/work/gaps'), '四流断链') : skip,
+    more ? safe(api('/api/work/seven/controls'), '管控流检查点') : skip,
+    more ? safe(api('/api/work/seven/compliance'), '合规法规清单') : skip,
+    more ? safe(api('/api/v28/competency/coverage'), '能力图谱完整度') : skip,
+  ]);
   const tasks = [];
-  try {
-    const t = await api('/api/todo');
+  if (t) {
     const n = (t.items || []).filter(x => x.status !== '已完成').length;
     tasks.push({ icon: '📋', label: '待办事项', n, page: 'todo' });
-  } catch (e) {}
-  try {
-    const w = (await api('/api/work/runs')).items || [];
-    const n = w.filter(x => x.status === '进行中').length;
-    tasks.push({ icon: '🧭', label: '进行中的工作流', n, page: 'dashboard' });
-  } catch (e) {}
-  try {
-    const d = await api('/api/work/demo/status');
-    tasks.push({ icon: '🎬', label: d.已载入 ? '演示数据已载入（' + d.记录数 + ' 条，可清空）' : '演示数据未载入', n: d.记录数, page: 'dashboard', demo: true });
-  } catch (e) {}
-  if (pos !== 'business') {
-    try {
-      const g = await api('/api/work/gaps');
-      tasks.push({ icon: '🕸', label: '四流断链（待补功能）', n: g.步骤数 + g.动作数, page: 'graph_map' });
-    } catch (e) {}
-    try {
-      const a = await api('/api/work/seven/controls');
-      tasks.push({ icon: '🛡', label: '管控流检查点', n: a.总数, page: 'seven_center' });
-    } catch (e) {}
-    try {
-      const c = await api('/api/work/seven/compliance');
-      tasks.push({ icon: '⚖', label: '合规法规清单', n: c.数量, page: 'seven_center' });
-    } catch (e) {}
-    try {
-      const cov = await api('/api/v28/competency/coverage');
-      tasks.push({ icon: '🧭', label: '能力图谱完整度', n: (cov.整体完整度 ?? '—') + '%', page: 'competency_center' });
-    } catch (e) {}
   }
+  if (w) {
+    const n = (w.items || []).filter(x => x.status === '进行中').length;
+    tasks.push({ icon: '🧭', label: '进行中的工作流', n, page: 'dashboard' });
+  }
+  if (d) tasks.push({ icon: '🎬', label: d.已载入
+    ? '演示数据已载入（' + d.记录数 + ' 条，可清空）' : '演示数据未载入',
+    n: d.记录数, page: 'dashboard', demo: true });
+  if (g) tasks.push({ icon: '🕸', label: '四流断链（待补功能）', n: g.步骤数 + g.动作数, page: 'graph_map' });
+  if (a) tasks.push({ icon: '🛡', label: '管控流检查点', n: a.总数, page: 'seven_center' });
+  if (c) tasks.push({ icon: '⚖', label: '合规法规清单', n: c.数量, page: 'seven_center' });
+  if (cov) tasks.push({ icon: '🧭', label: '能力图谱完整度',
+    n: (cov.整体完整度 ?? '—') + '%', page: 'competency_center' });
   return `<div class="card"><h3>今日待我处理</h3>
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">${tasks.map(x =>
       `<div style="flex:1;min-width:160px;border:1px solid var(--border);border-radius:8px;padding:12px;cursor:pointer" onclick="goPage('${x.page}')">
@@ -509,8 +507,8 @@ function renderNav() {
     if (n.dataset.position) { setPosition(n.dataset.position); return; }
     if (n.dataset.page) go(n.dataset.page);
   };
-  try { const box = el.parentNode; if (box && box.scrollTo) box.scrollTo(0, 0); } catch (e) {}
-  try { if (S && S.page) highlightNav(S.page); } catch (e) {}
+  try { const box = el.parentNode; if (box && box.scrollTo) box.scrollTo(0, 0); } catch (e) { warn(e); }
+  try { if (S && S.page) highlightNav(S.page); } catch (e) { warn(e); }
 }
 function highlightNav(page) {
   document.querySelectorAll('#navTree button[data-page]').forEach(b => {
@@ -523,7 +521,7 @@ function highlightNav(page) {
     b.style.fontWeight = '';
   });
 }
-try { renderNav(); } catch (e) { try { document.getElementById('navTree').innerHTML = '⚠ 侧栏渲染错误: ' + e.message; } catch (_) {} }
+try { renderNav(); } catch (e) { try { document.getElementById('navTree').innerHTML = '⚠ 侧栏渲染错误: ' + e.message; } catch (_) { warn(_); } }
 
 const _oldDashboard = PAGES.dashboard;
 

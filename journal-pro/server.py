@@ -2,6 +2,7 @@
 """会计出纳全流程系统 - 后端 API（Python 标准库 + SQLite）"""
 import base64
 import csv
+import hashlib
 import io
 import json
 import os
@@ -2957,10 +2958,21 @@ class Handler(BaseHTTPRequestHandler):
             return
         with open(fp, "rb") as f:
             data = f.read()
+        # 静态资源用内容哈希做协商缓存：文件没变返回 304（不传正文），
+        # 文件一改 ETag 立即变化，浏览器马上拿到新版，不会重现「旧缓存导致按钮失灵」。
+        # 注意：只有这里启用缓存；_send() 的 API 响应仍是 no-store，数据永不被缓存。
+        etag = '"' + hashlib.md5(data).hexdigest() + '"'
+        if self.headers.get("If-None-Match") == etag:
+            self.send_response(304)
+            self.send_header("ETag", etag)
+            self.send_header("Cache-Control", "no-cache")
+            self.end_headers()
+            return
         self.send_response(200)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(data)))
-        self.send_header("Cache-Control", "no-store")
+        self.send_header("ETag", etag)
+        self.send_header("Cache-Control", "no-cache")
         self.end_headers()
         self.wfile.write(data)
 

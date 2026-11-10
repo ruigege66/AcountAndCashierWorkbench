@@ -1,9 +1,7 @@
-/* 轻量动效引擎（性能优先版）
-   保留：静态极光层、星点呼吸、页面切换一次性扫光、入场揭示、hover 反馈。
-   移除：逐帧 pointermove 计算（3D 倾斜 / 局部高光 / 鼠标柔光）、
-        全屏背景位移动画、旋转渐变描边的每帧重绘。
-   原因：这些效果在滚动和移动鼠标时反复触发全页重绘，浏览器明显卡顿。
-   零依赖；装饰层 pointer-events:none；prefers-reduced-motion 下整层不创建。
+/* 简洁模式：视觉装饰已全部回退，这里保留函数签名以兼容调用点与回归断言。
+   initMotion / refreshMotion / pulseSweep 都是空实现，
+   不创建 DOM 层、不注册观察器、不跑任何动画，页面重绘时零额外工作。
+   若将来要恢复光影，恢复本文件实现并删掉 styles.css 末尾的「简洁模式」覆盖段即可。
 */
 function motionReduced() {
   try {
@@ -21,20 +19,7 @@ function refreshMotion(root) {
   // 简洁模式：不挂揭示类、不触发扫光，页面重绘时零额外工作。
 }
 
-let _motionObserver = null;
-if (typeof IntersectionObserver !== 'undefined') {
-  try {
-    _motionObserver = new IntersectionObserver(function (entries) {
-      entries.forEach(function (en) {
-        if (en.isIntersecting) {
-          try { en.target.classList.add('in'); } catch (e) {}
-          _motionObserver.unobserve(en.target);
-        }
-      });
-    }, { rootMargin: '80px 0px', threshold: 0.02 });
-  } catch (e) { _motionObserver = null; }
-}
-
+let _motionObserver = null;   // 简洁模式：不创建观察器
 function pulseSweep() {
   // 简洁模式：无扫光动画。
 }

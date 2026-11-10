@@ -3,9 +3,9 @@
 async function loadMeta() { S.meta = await api('/api/meta'); }
 function go(page) {
   S.page = page;
-  try { if (location.hash.replace(/^#/, '') !== page) history.replaceState(null, '', '#' + page); } catch (e) {}
+  try { if (location.hash.replace(/^#/, '') !== page) history.replaceState(null, '', '#' + page); } catch (e) { warn(e); }
   try { if (typeof highlightNav === 'function') highlightNav(page); else
-    document.querySelectorAll('aside button').forEach(b => b.classList.toggle('active', b.dataset.page === page)); } catch (e) {}
+    document.querySelectorAll('aside button').forEach(b => b.classList.toggle('active', b.dataset.page === page)); } catch (e) { warn(e); }
   $('crumb').textContent = ({ dashboard: '工作台', docs: '业务单据', vouchers: '凭证管理', journal: '现金银行日记账',
     daily: '日结核对', recon: '银行对账', periods: '期末结账', reports: '报表中心',
     books: '账簿与分析', compliance: '内控合规', invoices: '发票管理', assets: '固定资产', office: '导入导出中心',
@@ -47,7 +47,7 @@ async function render() {
     // 页面顶部插入「这个功能干什么 / 怎么算」的说明条，再给按钮表头挂悬浮解释
     $('page').innerHTML = (typeof pageHelpHtml === 'function' ? pageHelpHtml(S.page) : '')
       + await PAGES[S.page]();
-    try { if (typeof attachHelp === 'function') attachHelp($('page')); } catch (_) {}
+    try { if (typeof attachHelp === 'function') attachHelp($('page')); } catch (_) { warn(_); }
     if (S.page === 'dashboard') {
       const [m, s] = await Promise.all([api('/api/reports/monthly'), api('/api/reports/subjects')]);
       safeChart('c1', { type: 'bar', data: { labels: m.items.map(x => x.period), datasets: [
@@ -93,10 +93,10 @@ async function render() {
         datasets: [{ label: '次数', data: st.by_action.map(x => x.n), backgroundColor: '#4472C4', borderRadius: 4 }] },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
     }
-    try { if (typeof attachHelp === 'function') attachHelp($('page')); } catch (_) {}
-    try { if (typeof refreshMotion === 'function') refreshMotion($('page')); } catch (_) {}
+    try { if (typeof attachHelp === 'function') attachHelp($('page')); } catch (_) { warn(_); }
+    try { if (typeof refreshMotion === 'function') refreshMotion($('page')); } catch (_) { warn(_); }
     $('dbStatus').textContent = 'SQLite 已连接 · 迁移 v' + S.meta.migrations.length;
-    try { if (typeof highlightNav === 'function') highlightNav(S.page); } catch (_) {}
+    try { if (typeof highlightNav === 'function') highlightNav(S.page); } catch (_) { warn(_); }
   } catch (e) {
     $('page').innerHTML = `<div class="card"><h3>加载失败</h3><p class="muted">${esc(e.message)}</p></div>`;
   }

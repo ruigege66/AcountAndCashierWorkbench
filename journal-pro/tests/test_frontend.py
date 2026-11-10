@@ -171,6 +171,19 @@ def main():
     check("  简洁模式生效（装饰层已回退，功能样式保留）", motion_ok,
           f"不建层 {no_layer} / 覆盖段 {simple_mode} / 无滤镜 {no_blur} / 无循环动画 {no_loops}")
 
+    # ⑩ 传输 / 首屏 / 可观测性优化（用户反馈打开慢后的三项改进）
+    import glob
+    srv = read(os.path.join(ROOT, "server.py"))
+    all_js = "".join(read(f) for f in glob.glob(os.path.join(ROOT, "public", "js", "*.js")))
+    etag_ok = ('import hashlib' in srv and 'If-None-Match' in srv
+               and 'hashlib.md5(data).hexdigest()' in srv
+               and srv.count('Cache-Control", "no-store"') == 1)   # 仅 _send 保留
+    parallel_ok = 'await Promise.all([' in nav and 'const safe = (p, tag)' in nav
+    warn_ok = ('function warn(' in core_js
+               and not re.search(r'catch \(\w+\) \{\s*\}', all_js))
+    check("  传输/首屏/可观测性优化齐备", etag_ok and parallel_ok and warn_ok,
+          f"ETag 协商缓存 {etag_ok} / 首页并行 {parallel_ok} / 空 catch 清零 {warn_ok}")
+
     if not node:
         print("  [--] 未找到 node，动态渲染校验已跳过（静态校验通过即放行）")
 

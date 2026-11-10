@@ -150,7 +150,7 @@ function attachHelp(root) {
       if (!hit) return;
       el.setAttribute('data-help', [hit[2], hit[3], ''].join(sep));
       el.classList.add('has-help');
-    } catch (e) {}
+    } catch (e) { warn(e); }
   });
 }
 
@@ -202,9 +202,9 @@ function initHelp() {
         tip.style.left = Math.min(Math.max(10, r.left), Math.max(10, vw - 354)) + 'px';
         tip.style.top = top + 'px';
       }
-    } catch (e) {}
+    } catch (e) { warn(e); }
   }
-  function hide() { try { tip.classList.remove('show'); } catch (e) {} }
+  function hide() { try { tip.classList.remove('show'); } catch (e) { warn(e); } }
 
   try {
     document.addEventListener('mouseover', e => { const t = findHelp(e.target); if (t) show(t); });
@@ -212,5 +212,5 @@ function initHelp() {
     document.addEventListener('focusin', e => { const t = findHelp(e.target); if (t) show(t); });
     document.addEventListener('focusout', hide);
     attachHelp(document.body);
-  } catch (e) {}
+  } catch (e) { warn(e); }
 }

@@ -158,7 +158,7 @@ Click the round **☾ / ☀** button in the top-right corner to switch skins. Yo
 
 - Open `http://127.0.0.1:8765/?theme=dark` to start in dark mode (handy for bookmarking or demos); the URL stays in sync after switching.
 - Chart ticks and legend labels adapt automatically, so figures stay legible in both skins. **All 65 pages and every button behave identically** — only the appearance changes, nothing to re-learn.
-- The `前端 11-09e` tag in the top-right corner is the front-end build version. If the UI looks wrong or a button does nothing, press **Ctrl+F5** first; an older tag means the browser is using a cached page.
+- The `前端 11-09f` tag in the top-right corner is the front-end build version. If the UI looks wrong or a button does nothing, press **Ctrl+F5** first; an older tag means the browser is using a cached page.
 - Printing automatically hides the sidebar, light blooms and buttons, leaving clean white content.
 
 ### 30.5 Understanding each feature: guide bars and hover tips
@@ -182,6 +182,8 @@ The visual effects made the browser sluggish, so they are **all switched off** a
 - **No feature was removed**: the 9 sidebar groups, the per-page 💡 guide bar, hover formulas, the role dropdown and light/dark themes all still work;
 - Scrolling, page switching and data entry are noticeably smoother;
 - Printing hides the sidebar and buttons automatically.
+
+Loading is faster too: unchanged files are reused from the browser cache and the dashboard fetches its data in parallel.
 
 A single "plain mode" override block in the stylesheet can be deleted to restore the visual layer; a regression guard in `tests/test_frontend.py` prevents decorations from being reintroduced.
 

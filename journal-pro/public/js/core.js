@@ -11,6 +11,13 @@ const ROLE_ACTORS = { all: '出纳', business: '出纳', manager: '总账会计'
 const today = () => new Date().toISOString().slice(0, 10);
 const thisMonth = () => today().slice(0, 7);
 
+
+/* 静默失败可观测性：被吞掉的异常至少在控制台留一条线索。
+   之前「清空演示数据只删 42/48 条」长期没被发现，就是空 catch 吞掉了错误。 */
+function warn(e, tag) {
+  try { console.warn('[journal-pro] ' + (tag || '操作未完成') + ':', (e && e.message) || e || ''); }
+  catch (_) { return; }
+}
 async function api(path, method = 'GET', body) {
   const opt = { method, headers: {} };
   if (body !== undefined) { opt.headers['Content-Type'] = 'application/json'; opt.body = JSON.stringify(body); }
@@ -50,7 +57,7 @@ const bankOpts = (v = '') => S.meta.bank_accounts.map(b =>
 const statusTag = s => `<span class="tag t-${s}">${({ draft: '草稿', submitted: '待审批', approved: '已审批', rejected: '已驳回', settled: '已结算', cleared: '已核销', posted: '已过账', void: '已作废', open: '已开放', closed: '已结账' })[s] || s}</span>`;
 const DOC_LABEL = { payment: '付款申请', receipt: '收款单', advance: '备用金借款', reimbursement: '费用报销' };
 
-function destroyCharts() { S.charts.forEach(c => { try { c.destroy(); } catch (e) {} }); S.charts = []; }
+function destroyCharts() { S.charts.forEach(c => { try { c.destroy(); } catch (e) { warn(e); } }); S.charts = []; }
 
 /* ---------- 界面主题（晨曦浅色 / 极光深色）与图表联动 ----------
    图表刻度、图例、网格线由 Chart.js 默认值绘制，不随 CSS 变量变化，
@@ -75,7 +82,7 @@ function applyChartTheme() {
     const labels = Chart.defaults.plugins && Chart.defaults.plugins.legend
       && Chart.defaults.plugins.legend.labels;
     if (labels) labels.color = p.fg;
-  } catch (e) {}
+  } catch (e) { warn(e); }
 }
 function refreshChartColors() {
   try {
@@ -94,9 +101,9 @@ function refreshChartColors() {
         const labels = o.plugins && o.plugins.legend && o.plugins.legend.labels;
         if (labels) labels.color = p.fg;
         if (typeof c.update === 'function') c.update('none');
-      } catch (e) {}
+      } catch (e) { warn(e); }
     });
-  } catch (e) {}
+  } catch (e) { warn(e); }
 }
 function setTheme(t) {
   t = t === 'dark' ? 'dark' : 'light';
@@ -109,7 +116,7 @@ function setTheme(t) {
       u.searchParams.set('theme', t);
       history.replaceState(null, '', u.pathname + u.search + u.hash);
     }
-  } catch (e) {}
+  } catch (e) { warn(e); }
   const b = $('themeToggle');
   if (b) {
     b.textContent = t === 'dark' ? '☀' : '☾';

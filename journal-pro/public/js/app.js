@@ -10,7 +10,7 @@ try {
     _tb.textContent = _dark ? '☀' : '☾';
     _tb.title = _dark ? '切换到晨曦浅色' : '切换到极光深色';
   }
-} catch (e) {}
+} catch (e) { warn(e); }
 
 /* 角色下拉与审计操作人：刷新后按本地偏好还原，不显示成默认第一项 */
 try {
@@ -19,13 +19,13 @@ try {
   if (_sel) _sel.value = _role;
   const _a = document.getElementById('actor');
   if (_a) _a.value = ROLE_ACTORS[_role] || '系统';
-} catch (e) {}
+} catch (e) { warn(e); }
 
 /* 功能原理悬浮说明（侧栏、按钮、表头、卡片标题） */
-try { if (typeof initHelp === 'function') initHelp(); } catch (e) {}
+try { if (typeof initHelp === 'function') initHelp(); } catch (e) { warn(e); }
 
 /* 流动极光 / 鼠标柔光 / 3D 倾斜 / 旋转描边 */
-try { if (typeof initMotion === 'function') initMotion(); } catch (e) {}
+try { if (typeof initMotion === 'function') initMotion(); } catch (e) { warn(e); }
 
 /* 地址栏锚点变化 → 渲染对应页面。
    这样即使侧栏的动态渲染出问题，index.html 里的静态入口（<a href="#page">）也点得动。 */
@@ -46,5 +46,5 @@ setTimeout(function () {
     if (!el) return;
     const hasBtns = el.querySelectorAll('button[data-page]').length;
     if (!hasBtns && typeof renderNav === 'function') renderNav();
-  } catch (e) {}
+  } catch (e) { warn(e); }
 }, 300);
