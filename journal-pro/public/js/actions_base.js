@@ -509,7 +509,10 @@ async function saveRisk() {
       risk_cash_floor: $('rk_cash').value, risk_bank_floor: $('rk_bank').value,
       risk_large_txn: $('rk_large').value, risk_safety_months: $('rk_months').value,
       risk_recon_days: $('rk_recon').value, risk_budget_warn: $('rk_budget').value,
-      monitor_refresh: $('rk_refresh').value
+      monitor_refresh: $('rk_refresh').value,
+      risk_vat_threshold: $('rk_vat_threshold').value,
+      risk_vat_warn_pct: $('rk_vat_warn').value,
+      risk_vat_registered: $('rk_vat_registered').value
     }, actor: actor() });
     await loadMeta(); toast('✓ 阈值已保存，预警与大屏刷新已更新'); render();
   } catch (e) { toast('✗ ' + e.message, 4000); }

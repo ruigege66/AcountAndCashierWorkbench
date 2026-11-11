@@ -184,6 +184,18 @@ def main():
     check("  传输/首屏/可观测性优化齐备", etag_ok and parallel_ok and warn_ok,
           f"ETag 协商缓存 {etag_ok} / 首页并行 {parallel_ok} / 空 catch 清零 {warn_ok}")
 
+    # ⑪ 2026 增值税一般纳税人认定预警（连续 12 个月滚动销售额）
+    pbase = read(os.path.join(ROOT, "public", "js", "pages_base.js"))
+    vat_ok = ('def vat_taxpayer_status' in srv and '/api/risk/vat-status' in srv
+              and 'risk_vat_registered' in srv
+              and 'VAT_GENERAL_THRESHOLD = 5000000' in srv
+              and '/api/risk/vat-status' in pbase
+              and '增值税一般纳税人认定预警' in pbase
+              and all(x in pbase for x in ('rk_vat_threshold', 'rk_vat_warn', 'rk_vat_registered'))
+              and 'risk_vat_registered' in act_js)
+    check("  2026 一般纳税人认定预警完整（后端/前端/配置）", vat_ok,
+          "连续12个月滚动 / 500万标准 / 中文卡片 / 三项可配置")
+
     if not node:
         print("  [--] 未找到 node，动态渲染校验已跳过（静态校验通过即放行）")
 

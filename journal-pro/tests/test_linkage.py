@@ -13,6 +13,7 @@
 import os
 import sys
 import tempfile
+from datetime import date
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
@@ -598,6 +599,69 @@ def main():
           f"{a0} → {bs2['total_assets']}")
     check("  新增科目后报表仍平衡", bs2["balanced"])
     check("  自动归集行带说明", any("自动归集" in str(x.get("reclass", "")) for x in bs2["assets"]))
+
+    # ---------- 19. 增值税一般纳税人认定预警（2026 新规）跨模块联动 ----------
+    print("\n--- 19. 增值税认定预警：凭证 / 发票 → 预警 / 大屏 联动 ---")
+    c = new_case("vat")
+    d0 = date.today().replace(day=1)
+    months = []
+    for i in range(11, -1, -1):
+        y, mo = d0.year, d0.month - i
+        while mo <= 0:
+            mo += 12
+            y -= 1
+        months.append(f"{y:04d}-{mo:02d}")
+    for i, p in enumerate(months):
+        add_voucher(c, p + "-05", "1002", "6001", 450000.0)
+        add_invoice(c, f"VAT-X-{i:02d}", "销项", 400000.0, 52000.0, date=p + "-06")
+    c.commit()
+
+    vat = S.vat_taxpayer_status(c)
+    check("㉙ 连续12个月收入 540 万触发超标认定", vat["rolling_total"] == 5400000.0
+          and vat["level"] == "高" and vat["status"] == "已超标准",
+          f"¥{vat['rolling_total']:,.2f} / {vat['percent']}% / {vat['status']}")
+    check("  统计窗口为任意连续 12 个月（非自然年度）",
+          vat["window"][0] == months[0] and vat["window"][1] == months[-1],
+          f"{vat['window'][0]} ~ {vat['window'][1]}")
+    al = S.alerts_list(c, None, None, {})["items"]
+    check("  预警引擎联动：出现「税务合规」高风险",
+          any(x["category"] == "税务合规" and x["level"] == "高" for x in al))
+    mon = S.monitor(c, None, None, {})
+    check("  监控大屏联动：高风险计数包含该预警",
+          mon.get("alerts_summary", {}).get("high", 0) >= 1,
+          str(mon.get("alerts_summary")))
+    check("  发票口径联动：销项合计 480 万且给出账票差异",
+          vat["invoice_total"] == 4800000.0 and vat["diff"] == -600000.0,
+          f"票 ¥{vat['invoice_total']:,.2f} / 差异 ¥{vat['diff']:,.2f}")
+    check("  月度明细 12 行（会计收入与发票并列）", len(vat["monthly"]) == 12)
+    route = S.vat_status_route(c, None, None, {})
+    check("  API 路由与计算引擎读数一致", route["rolling_total"] == vat["rolling_total"])
+
+    # 负向：草稿凭证与结转凭证都不参与应税销售额
+    vd = add_voucher(c, months[-1] + "-20", "1002", "6001", 800000.0, post=False)
+    c.execute("UPDATE vouchers SET is_closing=1 WHERE id=?", (vd,))
+    c.commit()
+    check("  草稿 / 结转凭证不计入销售额",
+          S.vat_taxpayer_status(c)["rolling_total"] == 5400000.0)
+
+    # 配置联动：身份、阈值均可调，且不影响税率计算用的 taxpayer_type
+    c.execute("INSERT OR REPLACE INTO settings(key,value) VALUES('risk_vat_registered','general')")
+    c.commit()
+    vg = S.vat_taxpayer_status(c)
+    check("  已登记一般纳税人后不再预警", vg["level"] == ""
+          and vg["status"] == "已是一般纳税人")
+    check("  与税率计算键 taxpayer_type 解耦",
+          db.one(c, "SELECT value FROM settings WHERE key='taxpayer_type'")["value"] != "small")
+    c.execute("INSERT OR REPLACE INTO settings(key,value) VALUES('risk_vat_registered','small')")
+    c.execute("INSERT OR REPLACE INTO settings(key,value) VALUES('risk_vat_threshold','6000000')")
+    c.commit()
+    vt = S.vat_taxpayer_status(c)
+    check("  认定标准可调：改 600 万后降级为临近提醒",
+          vt["level"] == "中" and vt["percent"] == 90.0, f"{vt['status']} / {vt['percent']}%")
+    c.execute("INSERT OR REPLACE INTO settings(key,value) VALUES('risk_vat_warn_pct','50')")
+    c.commit()
+    check("  临近提醒线可调：50% 时 90% 完成度升级为中级",
+          S.vat_taxpayer_status(c)["level"] == "中")
 
     print(f"\n{'=' * 56}\n通过 {len(PASS)} 项，失败 {len(FAIL)} 项")
     return 0 if not FAIL else 1

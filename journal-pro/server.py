@@ -1904,6 +1904,128 @@ def monitor(conn, m, body, qs):
     }
 
 
+# ---------------- 增值税一般纳税人认定预警（2026 起施行的增值税法实施条例） ----------------
+# 政策口径：年应征增值税销售额 > 500 万元应登记为一般纳税人；
+# 「年」不是自然年度，而是连续不超过 12 个月（或 4 个季度）经营期内的累计销售额。
+VAT_GENERAL_THRESHOLD = 5000000.0
+
+
+def _month_span(start, end):
+    """生成 start~end 的连续月份 YYYY-MM 列表。"""
+    y, m = int(start[:4]), int(start[5:7])
+    ey, em = int(end[:4]), int(end[5:7])
+    out = []
+    while (y, m) <= (ey, em):
+        out.append(f"{y:04d}-{m:02d}")
+        m += 1
+        if m > 12:
+            y, m = y + 1, 1
+    return out
+
+
+def vat_taxpayer_status(conn):
+    """连续 12 个月滚动应征增值税销售额是否触及一般纳税人认定标准。
+
+    口径：已过账、非结转凭证的营业收入（6001/6051 贷方净额）作为「实质性业务收入」；
+    发票销项不含税金额作为辅助核对口径，两者差异单独提示。
+    扫描任意连续 12 个月窗口取最大值（税务机关判定口径），而非自然年度累计。
+    """
+    s = lambda k, d: float(setting(conn, k, d) or d)
+    threshold = s("risk_vat_threshold", VAT_GENERAL_THRESHOLD)
+    if threshold <= 0:
+        threshold = VAT_GENERAL_THRESHOLD
+    warn_pct = max(0.0, min(100.0, s("risk_vat_warn_pct", 80))) / 100.0
+    # 独立键：仅表示「当前税务登记身份」的合规状态，不与税务模块的
+    # taxpayer_type（用于税率计算，默认 general）混用。
+    registered = setting(conn, "risk_vat_registered", "small") or "small"
+
+    rev_rows = q(conn, """SELECT substr(v.period,1,7) AS period,
+            SUM(CASE WHEN COALESCE(s.direction,'贷')='贷' THEN l.credit-l.debit
+                     ELSE l.debit-l.credit END) AS revenue
+            FROM voucher_lines l JOIN vouchers v ON v.id=l.voucher_id
+            LEFT JOIN subjects s ON s.code=l.subject_code
+            WHERE v.status='posted' AND COALESCE(v.is_closing,0)=0
+              AND (l.subject_code LIKE '6001%' OR l.subject_code LIKE '6051%')
+            GROUP BY substr(v.period,1,7)""")
+    revenue = {r["period"]: float(r["revenue"] or 0) for r in rev_rows}
+
+    inv_rows = q(conn, """SELECT substr(invoice_date,1,7) AS period, SUM(amount) AS amt
+            FROM invoices WHERE kind='销项' AND COALESCE(status,'') NOT LIKE '%作废%'
+            GROUP BY substr(invoice_date,1,7)""")
+    invoiced = {r["period"]: float(r["amt"] or 0) for r in inv_rows}
+
+    current = datetime.now().strftime("%Y-%m")
+    all_months = sorted(set(revenue) | set(invoiced))
+    months = _month_span(all_months[0], max(current, all_months[-1])) if all_months else [current]
+
+    best, best_window = 0.0, (months[0], months[-1])
+    for i in range(len(months)):
+        win = months[i:i + 12]
+        total = sum(revenue.get(m, 0.0) for m in win)
+        if total > best:
+            best, best_window = total, (win[0], win[-1])
+    cur_window = months[-12:] if len(months) >= 12 else months
+    current_total = sum(revenue.get(m, 0.0) for m in cur_window)
+
+    gap = threshold - best
+    pct = round(best / threshold * 100, 2) if threshold > 0 else 0.0
+    recent = [revenue.get(m, 0.0) for m in months[-3:]]
+    avg3 = sum(recent) / len(recent) if recent else 0.0
+    eta = ""
+    if avg3 > 0 and gap > 0:
+        need = int(gap / avg3) + 1
+        idx = int(current[:4]) * 12 + (int(current[5:7]) - 1) + need
+        eta = f"{idx // 12:04d}-{idx % 12 + 1:02d}"
+
+    detail = (f"统计区间 {best_window[0]} ~ {best_window[1]}，累计 ¥{best:,.2f}；"
+              f"认定标准 ¥{threshold:,.2f}；"
+              + (f"已超出 ¥{-gap:,.2f}" if gap < 0 else f"尚差 ¥{gap:,.2f}"))
+    if registered == "general":
+        level, status, title = "", "已是一般纳税人", ""
+        advice = "已登记为一般纳税人，无需再按小规模纳税人标准预警；按规定登记后不得转回小规模纳税人。"
+    elif best > threshold:
+        level, status = "高", "已超标准"
+        title = f"连续12个月销售额 ¥{best:,.2f} 已超标准，应办理一般纳税人登记"
+        advice = ("按 2026 年起施行的《增值税法实施条例》，一般纳税人生效之日为超过标准的当期 1 日"
+                  "（不早于 2026-01-01）。请在超过标准的次月申报纳税期限内办理登记，"
+                  "同步调整适用税率、进项抵扣与申报口径。")
+    elif best >= threshold * warn_pct:
+        level, status = "中", "临近标准"
+        title = f"连续12个月销售额已达标准 {pct}%，临近一般纳税人认定线"
+        advice = "建议提前梳理进项发票取得、客户专票需求与报价，做好转一般纳税人的准备。"
+    elif best >= threshold * 0.6:
+        level, status = "低", "持续关注"
+        title = f"连续12个月销售额达标准 {pct}%"
+        advice = "保持按月监控；接近提醒线时会升级为中级预警。"
+    else:
+        level, status, title = "", "正常", ""
+        advice = "当前滚动销售额低于认定标准，继续按小规模纳税人管理。"
+
+    window_months = _month_span(best_window[0], best_window[1])
+    invoice_total = sum(invoiced.get(m, 0.0) for m in window_months)
+    monthly = [{"period": m, "revenue": round(revenue.get(m, 0.0), 2),
+                "invoiced": round(invoiced.get(m, 0.0), 2)} for m in cur_window]
+    return {
+        "threshold": round(threshold, 2), "warn_pct": round(warn_pct * 100, 2),
+        "registered": registered, "status": status, "level": level,
+        "title": title, "detail": detail, "advice": advice,
+        "rolling_total": round(best, 2), "current_window_total": round(current_total, 2),
+        "window": [best_window[0], best_window[1]], "gap": round(gap, 2), "percent": pct,
+        "eta": eta, "avg3": round(avg3, 2), "monthly": monthly,
+        "invoice_total": round(invoice_total, 2),
+        "diff": round(invoice_total - best, 2),
+        "policy": ("《中华人民共和国增值税法实施条例》2026-01-01 施行：小规模纳税人为年应征增值税"
+                   "销售额未超过 500 万元的纳税人；年应征增值税销售额指连续不超过 12 个月或 4 个季度"
+                   "经营期内累计销售额。偶然销售无形资产、转让不动产不计入；登记为一般纳税人后"
+                   "不得转回小规模。"),
+    }
+
+
+@route("GET", r"/api/risk/vat-status")
+def vat_status_route(conn, m, body, qs):
+    return vat_taxpayer_status(conn)
+
+
 def alerts_list(conn, m, body, qs):
     """风险预警引擎：规则=可量化阈值，全部可在系统管理中配置"""
     s = lambda k, d: float(setting(conn, k, d) or d)
@@ -1997,6 +2119,10 @@ def alerts_list(conn, m, body, qs):
     if not chain["intact"]:
         items.append({"level": "高", "category": "审计", "title": "审计哈希链被破坏",
                       "detail": f"{len(chain['broken'])} 条记录校验异常，请立即核查"})
+    vat = vat_taxpayer_status(conn)
+    if vat["level"]:
+        items.append({"level": vat["level"], "category": "税务合规",
+                      "title": vat["title"], "detail": vat["detail"]})
     level_rank = {"高": 0, "中": 1, "低": 2}
     items.sort(key=lambda x: level_rank.get(x["level"], 9))
     return {"items": items, "summary": {
@@ -2010,7 +2136,8 @@ def alerts_route(conn, m, body, qs):
     r = alerts_list(conn, None, None, {})
     r["settings"] = {k: setting(conn, k) for k in
                      ("risk_cash_floor", "risk_bank_floor", "risk_large_txn",
-                      "risk_safety_months", "risk_recon_days", "risk_budget_warn", "monitor_refresh")}
+                      "risk_safety_months", "risk_recon_days", "risk_budget_warn", "monitor_refresh",
+                     "risk_vat_threshold", "risk_vat_warn_pct", "risk_vat_registered")}
     return r
 
 
@@ -2018,7 +2145,8 @@ def alerts_route(conn, m, body, qs):
 def save_risk_settings(conn, m, body, qs):
     st = body.get("settings") or {}
     allowed = ("risk_cash_floor", "risk_bank_floor", "risk_large_txn",
-               "risk_safety_months", "risk_recon_days", "risk_budget_warn", "monitor_refresh")
+               "risk_safety_months", "risk_recon_days", "risk_budget_warn", "monitor_refresh",
+               "risk_vat_threshold", "risk_vat_warn_pct", "risk_vat_registered")
     for k, v in st.items():
         if k in allowed:
             conn.execute("""INSERT INTO settings(key,value) VALUES(?,?)

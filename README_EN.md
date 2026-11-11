@@ -4,7 +4,7 @@ A self-hosted accounting + cashier system covering the full bookkeeping cycle:
 **business documents → approval → automatic vouchers → posting → journals → reconciliation → period close → financial statements → business analytics & forecasting**.
 Built with the **Python standard library + SQLite only — zero third-party dependencies**, with built-in internal controls (immutable ledger, audit hash chain, maker-checker segregation).
 
-> Version: V2.16 ｜ Front-end/back-end separated (vanilla JS SPA + REST API) ｜ Database: SQLite (WAL) ｜ Tests: 12 suites, 449 assertions + pre-commit + CI
+> Version: V2.16 ｜ Front-end/back-end separated (vanilla JS SPA + REST API) ｜ Database: SQLite (WAL) ｜ Tests: 12 suites, 462 assertions + pre-commit + CI
 > 中文文档：[README.md](README.md) ｜ [用户手册.md](journal-pro/docs/用户手册.md)
 
 ---
@@ -117,13 +117,19 @@ Click the round **☾ / ☀** button in the top-right corner to switch skins at 
 - **Plain mode (visual effects rolled back)**: the interface was still sluggish, so all decorative visuals are now off — aurora gradients, grid, star dust, glass blur, gradient border, looping animations and hover sheen. The background is a plain colour and cards are simple white panels with a thin border. **No feature was removed**: the 9 sidebar groups, page guide bars, hover formulas, role dropdown and both themes all still work. It is implemented as one `@media screen` override block; delete that block to restore the visual layer. A "plain mode" regression guard prevents decorations from creeping back in.
 - **Role dropdown** (👤, top-right): one selection sets both the sidebar feature tier and the operator name written to the audit log. Options: All functions / Cashier & AR-AP / General ledger & tax / CFO. It stays in sync with the sidebar's job-level buttons. The old free-text "operator" field is gone — it was genuinely used by write operations and segregation-of-duties checks, but is now derived from the role so it can't be mistyped.
 - Chart ticks and legend labels adapt to the theme automatically. Both skins were verified across all 65 pages — **the features and buttons are identical, only the appearance changes**.
-- `前端 11-09g` in the top-right corner is the front-end build tag. If the UI looks wrong or a button does nothing, press **Ctrl+F5** first; an older tag means the browser is serving a cached page.
+- `前端 11-11a` in the top-right corner is the front-end build tag. If the UI looks wrong or a button does nothing, press **Ctrl+F5** first; an older tag means the browser is serving a cached page.
+
+## 2026 VAT General-Taxpayer Threshold Alert
+
+Under the VAT Law Implementation Regulations effective 2026-01-01, a taxpayer whose cumulative taxable sales in **any consecutive period of up to 12 months** exceed RMB 5 million must register as a general VAT taxpayer (not a calendar-year total).
+
+The system scans rolling 12-month windows of booked operating revenue (posted, non-closing vouchers), cross-checks invoice sales, and reports the gap, an estimated crossing month and the required action. Thresholds, the warning line and the current registration status are configurable in the UI; once registered as general, the alert stops. This status does not change tax-rate calculation settings.
 
 ## Tests & Quality Gates
 
 ```bash
 cd journal-pro
-python run_tests.py             # run all 12 regression suites (449 assertions, ~15s)
+python run_tests.py             # run all 12 regression suites (462 assertions, ~15s)
 python run_tests.py core tax    # selected suites only
 run_tests.bat                   # Windows double-click
 ```
@@ -132,7 +138,7 @@ Quality gates so future changes cannot silently break behavior:
 
 1. **Pre-commit hook**: after `git config core.hooksPath .githooks`, every `git commit` runs the suites — **a failing regression blocks the commit** (verified; escape hatch: `--no-verify`);
 2. **CI**: `.github/workflows/ci.yml` runs all suites on every push / PR (Python 3.10 / 3.12 matrix);
-3. All 449 assertions run against throwaway ledgers. See [docs/TESTING.md](docs/TESTING.md).
+3. All 462 assertions run against throwaway ledgers. See [docs/TESTING.md](docs/TESTING.md).
 
 **Data safety & indexes** (migration 019): the first launch of each day writes a JSON snapshot (24 business tables) to `data/backups/` — atomic write, once per day, keeping the latest 7. No background thread or timer; a failure only prints one line and never blocks startup. The backup directory is gitignored. Two redundant indexes were also removed (a duplicate `journal_date` index and a single-column `vouchers(period)` index already covered by a composite one).
 

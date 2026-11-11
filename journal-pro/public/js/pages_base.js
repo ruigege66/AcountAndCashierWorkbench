@@ -589,8 +589,34 @@ const PAGES = {
   },
 
   risk: async () => {
-    const d = await api('/api/alerts');
+    const [d, v] = await Promise.all([api('/api/alerts'), api('/api/risk/vat-status')]);
     const cls = { 高: 'alert-high', 中: 'alert-medium', 低: 'alert-low' };
+    const vcolor = v.level === '高' ? 'var(--red)' : v.level === '中' ? 'var(--orange)'
+      : (v.level === '低' ? 'var(--primary)' : 'var(--green)');
+    const pct = Math.min(Math.max(Number(v.percent) || 0, 0), 100);
+    const monthly = Array.isArray(v.monthly) ? v.monthly : [];
+    const win = Array.isArray(v.window) && v.window.length === 2 ? v.window : ['—', '—'];
+    const vrows = monthly.length ? monthly.map(x => `<tr><td>${esc(x.period)}</td>
+      <td class="num">¥ ${money(x.revenue)}</td><td class="num">¥ ${money(x.invoiced)}</td>
+      <td class="num">¥ ${money(x.invoiced - x.revenue)}</td></tr>`).join('')
+      : '<tr><td colspan="4" class="empty">暂无收入数据</td></tr>';
+    const vatCard = `<div class="card"><h3>增值税一般纳税人认定预警 · 2026 新规</h3>
+      <div class="kpis">
+        <div class="kpi"><div class="label">当前状态</div><div class="value" style="font-size:19px;color:${vcolor}">${esc(v.status)}</div></div>
+        <div class="kpi"><div class="label">连续12个月累计销售额</div><div class="value">¥ ${money(v.rolling_total)}</div></div>
+        <div class="kpi"><div class="label">认定标准</div><div class="value">¥ ${money(v.threshold)}</div></div>
+        <div class="kpi"><div class="label">${v.gap < 0 ? '已超出标准' : '距标准还差'}</div><div class="value" style="color:${vcolor}">¥ ${money(Math.abs(v.gap))}</div></div>
+      </div>
+      <div style="height:8px;background:var(--grey-bg);border-radius:8px;overflow:hidden">
+        <div style="width:${pct}%;height:100%;background:${vcolor};border-radius:8px"></div></div>
+      <div class="muted" style="margin-top:6px">已达标准 ${v.percent}% · 统计区间 ${esc(win[0])} ~ ${esc(win[1])}${v.eta ? ` · 按近 3 月月均 ¥${money(v.avg3)} 推算，预计 ${esc(v.eta)} 达标` : ''}</div>
+      <div class="banner" style="margin-top:12px">${esc(v.advice)}</div>
+      <p class="muted" style="margin-top:8px">${esc(v.policy)}</p>
+      <h3 style="margin-top:14px">近 12 个月收入核对（会计收入 / 发票销售额）</h3>
+      <div class="scroll"><table><thead><tr><th>月份</th><th class="num">会计营业收入</th>
+        <th class="num">发票销售额</th><th class="num">差额（票－账）</th></tr></thead>
+        <tbody>${vrows}</tbody></table></div>
+      <p class="muted" style="margin-top:6px">窗口内发票销售额合计 ¥${money(v.invoice_total)}，与会计收入相差 ¥${money(v.diff)}；差异较大时请核对未开票收入或跨期开票。</p></div>`;
     return `<div class="page-head"><div><h2>风险预警</h2>
       <div class="hint">按可量化规则实时扫描 · 检查时间 ${esc(d.checked_at)} · 阈值可在下方调整</div></div>
       <button class="btn btn-p" onclick="render()">⟳ 立即重新扫描</button></div>
@@ -600,6 +626,7 @@ const PAGES = {
         <div class="kpi"><div class="label">低风险</div><div class="value" style="color:var(--primary)">${d.summary.low}</div></div>
         <div class="kpi"><div class="label">整体状态</div><div class="value" style="font-size:17px;color:${d.summary.high ? 'var(--red)' : (d.summary.medium ? 'var(--orange)' : 'var(--green)')}">${d.summary.high ? '需要处理' : (d.summary.medium ? '需要关注' : '健康')}</div></div>
       </div>
+      ${vatCard}
       <div class="card">${d.items.length ? d.items.map(x => `<div class="bs-alert"><span class="tag ${cls[x.level]}">${x.level}</span>
         <div style="flex:1"><b>${esc(x.title)}</b>　<span class="tag t-draft">${esc(x.category)}</span>
         <div class="muted" style="margin-top:3px">${esc(x.detail)}</div></div></div>`).join('')
@@ -613,9 +640,16 @@ const PAGES = {
           <div><label>流水核对天数</label><input type="number" id="rk_recon" value="${d.settings.risk_recon_days}"></div>
           <div><label>预算提醒线（%）</label><input type="number" id="rk_budget" value="${d.settings.risk_budget_warn}"></div>
           <div><label>大屏刷新（秒）</label><input type="number" id="rk_refresh" value="${d.settings.monitor_refresh}"></div>
+          <div><label>一般纳税人认定标准（元）</label><input type="number" step="0.01" id="rk_vat_threshold" value="${d.settings.risk_vat_threshold || 5000000}"></div>
+          <div><label>临近提醒线（%）</label><input type="number" id="rk_vat_warn" value="${d.settings.risk_vat_warn_pct || 80}"></div>
+          <div><label>当前税务登记身份</label><select id="rk_vat_registered">
+            <option value="small" ${v.registered === 'small' ? 'selected' : ''}>小规模纳税人（启用预警）</option>
+            <option value="general" ${v.registered === 'general' ? 'selected' : ''}>一般纳税人（已登记，不再预警）</option>
+          </select></div>
         </div>
         <button class="btn btn-p" onclick="saveRisk()">保存阈值</button>
-        <p class="muted" style="margin-top:8px">规则来自业界实践：现金安全月数 = 可用资金 ÷ 月均刚性支出（近 3 月），低于警戒线说明"还能撑多久"出了问题。</p></div>`;
+        <p class="muted" style="margin-top:8px">规则来自业界实践：现金安全月数 = 可用资金 ÷ 月均刚性支出（近 3 月），低于警戒线说明"还能撑多久"出了问题。</p>
+        <p class="muted" style="margin-top:4px">「当前税务登记身份」只控制这项合规预警是否启用，不改变税务中心里的税率计算设置。</p></div>`;
   },
 
   audit: async () => {

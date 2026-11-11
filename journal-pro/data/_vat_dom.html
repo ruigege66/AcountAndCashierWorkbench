@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>会计出纳全流程管理系统</title>
+<link rel="stylesheet" href="/styles.css">
+<script src="/js/vendor/chart.umd.min.js"></script>
+<script>
+/* 首屏同步应用主题偏好，避免刷新时先亮后暗的闪烁（偏好仅存本地浏览器） */
+try {
+  var _jpTheme = localStorage.getItem('jp-theme');
+  /* 也支持 ?theme=dark 直接打开深色（便于收藏 / 演示），优先级高于本地偏好 */
+  try {
+    var _q = new URLSearchParams(location.search).get('theme');
+    if (_q === 'dark' || _q === 'light') _jpTheme = _q;
+  } catch (e2) {}
+  document.documentElement.setAttribute('data-theme', _jpTheme === 'dark' ? 'dark' : 'light');
+} catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
+</script>
+</head>
+<body>
+<div class="layout">
+  <aside style="position:relative">
+    <div class="side-top">
+      <input id="globalSearch" placeholder="🔍 找功能：开票 / 盘点 / 审计…" oninput="showSearchResults(this.value)" style="width:100%;font-size:12px" autocomplete="off">
+      <button class="side-all" onclick="showAllFeatures()">☰ 全部功能 65 项</button>
+      <div id="searchResults" style="display:none;position:absolute;left:10px;right:10px;top:82px;z-index:99;
+        background:var(--card);border:1px solid var(--border);border-radius:8px;box-shadow:0 6px 20px rgba(20,40,80,.15);
+        max-height:340px;overflow:auto"></div>
+    </div>
+    <div id="navTree"><div data-navver="V218"></div><details style="border-bottom:1px solid rgba(255,255,255,.08)"><summary style="cursor:pointer;padding:8px 12px;font-size:12px">👤 岗位视角 · 全部功能</summary><div style="padding:4px 8px"><button data-position="all" style="display:block;width:100%;text-align:left;color:var(--primary);font-weight:500" onclick="setPosition('all')">● 全部功能</button><button data-position="business" style="display:block;width:100%;text-align:left;color:var(--text2)" onclick="setPosition('business')">○ 出纳 / 往来会计（业务操作）</button><button data-position="manager" style="display:block;width:100%;text-align:left;color:var(--text2)" onclick="setPosition('manager')">○ 总账会计 / 税务 / 审计（核算与分析）</button><button data-position="executive" style="display:block;width:100%;text-align:left;color:var(--text2)" onclick="setPosition('executive')">○ 财务总监 / CFO（决策与监管）</button></div></details><div class="nav-hint">💡 悬浮任意功能，看用途与算法</div><details open="" style="border-bottom:1px solid rgba(255,255,255,.08)"><summary data-help="从「今天要办什么」进入，11 项工作按步骤引导办理" style="cursor:pointer;padding:9px 12px;font-size:12.5px;font-weight:500">
+      <span class="ng-idx">1</span>工作台 · 按业务办<span class="ng-count">15</span></summary>
+      <div><button data-page="dashboard" data-help="从「今天要办什么」进入系统，汇总待办、四流断链、管控检查点与能力完整度⟦卡片数字来自待办中心 / 断链清单 / 管控检查点等实时接口，随业务操作自动刷新" style="display:block;width:100%;text-align:left" class="">今日工作台</button><button data-page="work_overview" data-help="11 项会计工作总览，按调研表的工作流步骤组织⟦每项点「进入工作台」可看办理步骤、要做动作、产生数据与直达办理入口" style="display:block;width:100%;text-align:left">11 项工作总览</button><button data-page="todo" data-help="我的待办中心：待审批单据、未过账凭证、未匹配流水、未核对日记账、未入账发票等⟦每项数量实时统计，办完自动消项" style="display:block;width:100%;text-align:left">我的待办中心</button><button data-page="search" data-help="全局搜索：按功能名或业务关键词直达对应页面⟦输入「开票」「盘点」「审计」等即可，结果点一下跳转" style="display:block;width:100%;text-align:left">全局搜索</button><button data-page="work_1" data-help="账务核算：从业务单据收集到财务报表编制的完整链路⟦工作流步骤 → 数据流产物 → 执行动作三层对齐；只有已过账凭证才进入报表" style="display:block;width:100%;text-align:left">账务核算</button><button data-page="work_2" data-help="财务与预算：预算编制、执行监控、差异分析与投融资测算⟦差异分析 = 实际发生额 − 预算额；投资净现值 NPV = Σ CFt ÷ (1+r)^t − 初始投资" style="display:block;width:100%;text-align:left">财务与预算</button><button data-page="work_3" data-help="合同法务（中级）：合同合规审核、主体设立变更、税务申报与纠纷维权⟦里程碑付款累计不得超过合同金额，超额会被拦截" style="display:block;width:100%;text-align:left">合同法务（中级）</button><button data-page="work_4" data-help="集团与战略财务：战略拆解、全面预算、并购尽调估值与内控体系⟦并购估值常用 DCF / 可比公司倍数；重大项目需先立项再尽调" style="display:block;width:100%;text-align:left">集团与战略财务</button><button data-page="work_5" data-help="准则核算：复杂业务会计判断、合并报表与附注披露⟦合并抵消调整后，集团口径资产 / 收入需抵消内部交易，避免重复计算" style="display:block;width:100%;text-align:left">准则核算</button><button data-page="work_6" data-help="审计鉴证：业务承接、风险评估、控制测试、实质性程序到出具报告⟦大额凭证 100% 抽查，中低额分层随机抽样；函证差异需查明原因" style="display:block;width:100%;text-align:left">审计鉴证</button><button data-page="work_7" data-help="成本与估值：财务预测、投融资量化评估、成本核算与经营决策模拟⟦短期经营决策用差量分析：差量收入 − 差量成本 &gt; 0 才可行" style="display:block;width:100%;text-align:left">成本与估值</button><button data-page="work_8" data-help="商事合规：公司治理、证券发行披露、合同审核、破产清算与票据⟦破产债权按法定清偿顺序分配，票据权利需在有效期内行使" style="display:block;width:100%;text-align:left">商事合规</button><button data-page="work_9" data-help="全税种管理：涉税核算、税额计算、申报缴纳、稽查应对与筹划⟦应纳税额 = 销项税额 − 已认证进项税额；税负率 = 应纳增值税 ÷ 会计收入 × 100%" style="display:block;width:100%;text-align:left">全税种管理</button><button data-page="work_10" data-help="战略与风控：内外部环境分析、战略落地、风险识别评估与应对⟦风险值常用「发生概率 × 影响程度」分级，重大风险需制定应对方案" style="display:block;width:100%;text-align:left">战略与风控</button><button data-page="work_11" data-help="重大项目综合：复杂业务立项、多维度尽调、跨专业方案与风险把控⟦跨模块联动：合同 / 税务 / 审计 / 估值结果共同进入综合判断" style="display:block;width:100%;text-align:left">重大项目综合</button></div></details><details open="" style="border-bottom:1px solid rgba(255,255,255,.08)"><summary data-help="业务单据 → 凭证 → 日记账 → 账簿，含模板、打印与合规体检" style="cursor:pointer;padding:9px 12px;font-size:12.5px;font-weight:500">
+      <span class="ng-idx">2</span>单据 · 凭证 · 账簿<span class="ng-count">11</span></summary>
+      <div><button data-page="docs" data-help="业务单据：付款申请、收款单、备用金借款、费用报销的录入与审批流⟦结算时自动生成并过账凭证，同时登记出纳日记账⟦草稿 → 提交 → 审批 → 结算，驳回与作废不产生下游数据" style="display:block;width:100%;text-align:left">业务单据</button><button data-page="invoices" data-help="发票登记与状态管理（已入账 / 已核销 / 已作废）⟦销项发票是增值税销项税额、账龄分析与催收清单的数据源" style="display:block;width:100%;text-align:left">发票管理</button><button data-page="vouchers" data-help="凭证录入、审核、过账、作废与红字冲销⟦借方合计必须等于贷方合计；只有「已过账」凭证才进入科目余额与三大报表" style="display:block;width:100%;text-align:left">凭证管理</button><button data-page="journal" data-help="现金 / 银行日记账，逐笔记录资金收付⟦由凭证过账自动生成，余额按账户逐笔重算；已登记流水不可删改，更正需红字冲销" style="display:block;width:100%;text-align:left">现金银行日记账</button><button data-page="books" data-help="总账、明细账与科目余额查询⟦科目余额 = 最近一次期初余额 + 全部已过账分录的借贷净额" style="display:block;width:100%;text-align:left">账簿与分析</button><button data-page="subjects" data-help="会计科目表与模板套用⟦新增科目会由报表通用兜底自动归集，不会漏项导致报表不平" style="display:block;width:100%;text-align:left">会计科目模板</button><button data-page="tpl" data-help="常用凭证模板，一键套用生成凭证⟦模板只保存分录结构，金额与日期在套用时填写" style="display:block;width:100%;text-align:left">常用凭证模板</button><button data-page="print" data-help="凭证打印与批量输出⟦按凭证号 / 期间筛选，输出保持借贷合计一致" style="display:block;width:100%;text-align:left">凭证打印</button><button data-page="vcheck" data-help="凭证合规体检⟦检查借贷平衡、科目有效性、附件与审批状态，问题凭证列出中文原因" style="display:block;width:100%;text-align:left">凭证合规体检</button><button data-page="acct_tools" data-help="会计工具箱：批量过账、待摊摊销、辅助核算维度与编号规则⟦批量过账会联动科目余额表、利润表、现金流量表与全部比率" style="display:block;width:100%;text-align:left">会计工具箱</button><button data-page="cashier_tools" data-help="出纳工作台：现金盘点、票据登记⟦盘点差额进入日结核对并触发预警；票据到期日进入未来资金预测" style="display:block;width:100%;text-align:left">出纳工作台</button></div></details><details open="" style="border-bottom:1px solid rgba(255,255,255,.08)"><summary data-help="日结核对、银行对账、期末与年度结转、资产与往来管理" style="cursor:pointer;padding:9px 12px;font-size:12.5px;font-weight:500">
+      <span class="ng-idx">3</span>资金 · 往来 · 期末<span class="ng-count">9</span></summary>
+      <div><button data-page="daily" data-help="日结核对：账实核对与差异记录⟦账实差额 = 实盘金额 − 账面余额，不为 0 会触发风险预警" style="display:block;width:100%;text-align:left">日结核对</button><button data-page="recon" data-help="银行对账：对账单流水与日记账自动匹配⟦按日期 + 金额 + 方向匹配，未匹配流水进入待办并可能触发超期预警" style="display:block;width:100%;text-align:left">银行对账</button><button data-page="periods" data-help="期末结账与反结账⟦结账前跑检查清单（未过账凭证、未核对流水等）；结账期间禁止新增或修改⟦结账后如确需补录，先「反结账」" style="display:block;width:100%;text-align:left">期末结账</button><button data-page="yearend" data-help="年度结转：本年利润 4103 → 利润分配 4104⟦结转凭证标记 is_closing，不参与利润表；留存收益总额不变" style="display:block;width:100%;text-align:left">年度结转</button><button data-page="snapshots" data-help="报表快照归档：把当期三大报表存成历史版本⟦用于跨期对比与审计留痕，归档后不受后续凭证影响" style="display:block;width:100%;text-align:left">报表快照归档</button><button data-page="assets" data-help="固定资产台账、购置入账与折旧计提⟦月折旧 = 原值 × (1 − 残值率) ÷ 使用月数；计入当期费用并增加累计折旧" style="display:block;width:100%;text-align:left">固定资产</button><button data-page="baddebt" data-help="按账龄比例计提坏账准备⟦应计提额 = Σ(各账龄段应收余额 × 对应计提率)，与 1231 已计提额比较取差额⟦足额后重复计提会被拦截，不会重复入账" style="display:block;width:100%;text-align:left">坏账准备计提</button><button data-page="collection" data-help="往来催收清单：按账龄列出逾期待收款⟦账龄 = 基准日 − 发票到期日；基准日可在分析规则中配置" style="display:block;width:100%;text-align:left">往来催收清单</button><button data-page="partner" data-help="往来账：按往来单位汇总应收应付与核销状态⟦余额 = 该单位全部发票金额 − 已核销金额" style="display:block;width:100%;text-align:left">往来账</button></div></details><details open="" style="border-bottom:1px solid rgba(255,255,255,.08)"><summary data-help="三大报表、现金流量表、比率、同比环比与经营分析报告" style="cursor:pointer;padding:9px 12px;font-size:12.5px;font-weight:500">
+      <span class="ng-idx">4</span>报表与经营分析<span class="ng-count">6</span></summary>
+      <div><button data-page="fin" data-help="三大财务报表：资产负债表、利润表、现金流量表⟦资产 = 负债 + 所有者权益；不平通常因期初未录、科目分类缺失或存在未过账凭证" style="display:block;width:100%;text-align:left">财务报表</button><button data-page="cfstmt" data-help="现金流量表正表⟦按对方科目将日记账流水归入经营 / 投资 / 筹资；累计净额应等于货币资金变动" style="display:block;width:100%;text-align:left">现金流量表（正表）</button><button data-page="reports" data-help="报表中心：月度收入、支出、净流入趋势与科目发生额⟦净流入 = 当期收入 − 当期支出" style="display:block;width:100%;text-align:left">报表中心</button><button data-page="ratios" data-help="10 项财务比率与健康评分⟦流动比率 = 流动资产 ÷ 流动负债；销售净利率 = 净利润 ÷ 营业收入 × 100%；资产负债率 = 负债合计 ÷ 资产合计 × 100%⟦分母为 0 时该比率显示「不适用」" style="display:block;width:100%;text-align:left">财务比率分析</button><button data-page="compare" data-help="同比环比与 12 个月趋势⟦增长率 = (本期 − 基期) ÷ |基期| × 100%，基期为 0 时不计算增长率" style="display:block;width:100%;text-align:left">同比环比分析</button><button data-page="analysis" data-help="在线经营分析报告，可打印 PDF 或导出 HTML⟦含 KPI、四大能力、瀑布图、趋势、比率、账龄、现金流与 6 个月预测；预测用线性回归 + 3 个月移动平均混合" style="display:block;width:100%;text-align:left">在线经营分析报告</button></div></details><details open="" style="border-bottom:1px solid rgba(255,255,255,.08)"><summary data-help="全税种台账、认证抵扣、申报、税负率、个税与汇算清缴" style="cursor:pointer;padding:9px 12px;font-size:12.5px;font-weight:500">
+      <span class="ng-idx">5</span>税务管理<span class="ng-count">1</span></summary>
+      <div><button data-page="tax_center" data-help="全税种管理：销项 / 进项台账、认证、增值税申报、附加税、税负率、企业所得税、个税、印花税等⟦应纳税额 = 销项税额 − 已认证进项税额；附加税 = 应纳税额 × 12%；税负率 = 应纳增值税 ÷ 利润表营业收入 × 100%⟦税负率控制区间默认 2.00%–3.50%，所有比率保留两位小数" style="display:block;width:100%;text-align:left">税务中心</button></div></details><details open="" style="border-bottom:1px solid rgba(255,255,255,.08)"><summary data-help="功能联动、知识图谱、七流、能力进阶、高阶模型与规则配置" style="cursor:pointer;padding:9px 12px;font-size:12.5px;font-weight:500">
+      <span class="ng-idx">6</span>数据分析与图谱<span class="ng-count">8</span></summary>
+      <div><button data-page="graph" data-help="功能联动关系图：写操作会影响哪些下游分析⟦基于 ImpactGraph 的节点与边，边上的说明解释「为什么会受影响」" style="display:block;width:100%;text-align:left">功能联动关系</button><button data-page="graph_map" data-help="知识图谱：工作 → 流程步骤 → 数据对象 → 执行动作⟦点任一节点看相邻关系与挂载的数据表，节点挨着节点像图数据库" style="display:block;width:100%;text-align:left">知识图谱</button><button data-page="seven_center" data-help="七流分析：数据流、价值流、工作流、执行流、资金流、管控流、合规流⟦含管控检查点与合规法规清单，按角色匹配查看" style="display:block;width:100%;text-align:left">七流分析</button><button data-page="competency_center" data-help="四流与能力图谱：需求覆盖度、缺口与追溯⟦完整度 = 已支撑项 ÷ 全部需求项 × 100%" style="display:block;width:100%;text-align:left">四流与能力图谱</button><button data-page="role_center" data-help="岗位与能力进阶：岗位家族 × 七流 × 职业层级⟦用于看某岗位该掌握哪些工作，不做功能裁剪" style="display:block;width:100%;text-align:left">岗位与能力进阶</button><button data-page="advanced_center" data-help="高阶核算与模型：存货计价、权益法、递延税、租赁现值、收入五步法，以及 NPV / IRR / WACC / 杜邦 / EVA / BS⟦NPV = Σ CFt ÷ (1+r)^t − 初始投资；WACC = 股权成本 × 股权权重 + 债务成本 × (1−税率) × 债务权重" style="display:block;width:100%;text-align:left">高阶核算与模型</button><button data-page="rules" data-help="分析规则配置：现金流分类前缀、比率阈值、账龄基准日⟦规则热更新，改完立即影响所有下游分析，无需重启" style="display:block;width:100%;text-align:left">分析规则配置</button><button data-page="macro_center" data-help="宏观经济会计：指标、通胀调整、行业对标、压力测试与汇率重估⟦通胀调整按不变价口径重述，汇率重估按期末汇率折算外币余额" style="display:block;width:100%;text-align:left">宏观经济会计</button></div></details><details open="" style="border-bottom:1px solid rgba(255,255,255,.08)"><summary data-help="合同法务、内部审计、金融监管会计三个专业域" style="cursor:pointer;padding:9px 12px;font-size:12.5px;font-weight:500">
+      <span class="ng-idx">7</span>法务 · 审计 · 监管<span class="ng-count">3</span></summary>
+      <div><button data-page="legal_center" data-help="合同法务：合同台账、付款里程碑、法律审核、纠纷案件、用印与合规义务⟦预计负债 = 索赔金额 × 胜诉概率；里程碑付款累计不得超过合同金额" style="display:block;width:100%;text-align:left">法务管理</button><button data-page="audit_center" data-help="内部审计：年度计划、底稿、分层抽样、发现与整改、函证与调整分录⟦大额 100% 抽查，中低额随机抽样；调整分录必须借贷平衡" style="display:block;width:100%;text-align:left">内部审计</button><button data-page="reg_center" data-help="金融监管会计：监管报表、反洗钱筛查、关联交易、ECL 与监管指标⟦ECL 按三阶段模型：阶段一 12 个月预期损失，阶段二 / 三 整个存续期预期损失" style="display:block;width:100%;text-align:left">金融监管会计</button></div></details><details open="" style="border-bottom:1px solid rgba(255,255,255,.08)"><summary data-help="开票 / 网银文件桥梁、对账单导入与整站导入导出" style="cursor:pointer;padding:9px 12px;font-size:12.5px;font-weight:500">
+      <span class="ng-idx">8</span>外部协同<span class="ng-count">3</span></summary>
+      <div><button data-page="gateway_center" data-help="开票 / 网银协同：用文件桥梁批量导出开票任务与付款模板、回传结果⟦只做批量文件导入导出，不模拟登录税务或网银，也不存储任何密码⟦标准流程：导出模板 → 在官方系统操作 → 回传结果并自动查重" style="display:block;width:100%;text-align:left">开票 / 网银协同</button><button data-page="stmtimport" data-help="对账单批量导入：字段映射 + 自动查重⟦重复流水按「日期 + 金额 + 方向 + 摘要」判重，导入后到银行对账里匹配" style="display:block;width:100%;text-align:left">对账单批量导入</button><button data-page="office" data-help="导入导出中心：Excel / CSV 与整站迁移包⟦迁移包含程序、迁移脚本、测试、文档与数据库快照，可在另一台机器直接启动" style="display:block;width:100%;text-align:left">导入导出中心</button></div></details><details open="" style="border-bottom:1px solid rgba(255,255,255,.08)"><summary data-help="基础资料、参数、内控、预警、审计链、监控与帮助" style="cursor:pointer;padding:9px 12px;font-size:12.5px;font-weight:500">
+      <span class="ng-idx">9</span>系统与安全<span class="ng-count">9</span></summary>
+      <div><button data-page="base" data-help="基础资料：科目、项目、往来单位、银行账户与期初建账⟦期初必须借贷平衡，否则会直接破坏「资产 = 负债 + 权益」" style="display:block;width:100%;text-align:left">基础资料</button><button data-page="system" data-help="系统管理：参数配置、备份恢复、演示数据与运行时健康⟦演示数据带 [演示] 标记，一键清空且不影响自己录入的数据" style="display:block;width:100%;text-align:left">系统管理</button><button data-page="compliance" data-help="内控合规：职责分离开关与合规义务倒计时⟦开启后申请人不能审批或办理自己的单据，换角色或换操作人后可继续" style="display:block;width:100%;text-align:left">内控合规</button><button data-page="risk" data-help="风险预警：税负率偏离、现金流不足、账龄超期等规则⟦预警分级 高 / 中 / 低，阈值可在分析规则中调整" style="display:block;width:100%;text-align:left" class="active">风险预警</button><button data-page="audit" data-help="审计中心（哈希链）：所有写操作留痕，可校验链是否被篡改⟦每条日志含前一条哈希，任一记录被改动都会导致后续校验失败" style="display:block;width:100%;text-align:left">审计中心（哈希链）</button><button data-page="monitor" data-help="监控大屏：现金 / 银行余额、14 天收支曲线、项目结构与分级预警⟦数据源与日记账、凭证分录一致，随业务实时刷新" style="display:block;width:100%;text-align:left">监控大屏</button><button data-page="sec_center" data-help="安全中心：RBAC、会话、敏感操作审计、限流与输入安全扫描⟦登录失败会锁定，凭据类字段一律拒绝存储" style="display:block;width:100%;text-align:left">安全中心</button><button data-page="arch_audit" data-help="架构审计中心：分层依赖、循环引用与迁移版本健康⟦领域层不得反向依赖适配层，也不得直接写 SQL" style="display:block;width:100%;text-align:left">架构审计中心</button><button data-page="help" data-help="帮助中心：中英文用户手册与常见问题⟦手册随版本更新，界面与实际不一致时以界面为准" style="display:block;width:100%;text-align:left">帮助中心</button></div></details></div>
+  </aside>
+  <div class="main">
+    <header>
+      <div class="crumb" id="crumb">风险预警</div>
+      <div class="right">
+        <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="切换到极光深色" aria-label="切换界面主题">☾</button>
+        <label class="role-pick" title="切换角色：同时调整侧栏功能分层与审计日志的操作人">
+          <span class="role-ico">👤</span>
+          <select id="roleSwitch" onchange="setRole(this.value)" aria-label="切换当前角色">
+            <option value="all">全部功能（不分层）</option>
+            <option value="business">出纳 / 往来会计</option>
+            <option value="manager">总账会计 / 税务主管</option>
+            <option value="executive">财务总监 / CFO</option>
+          </select>
+        </label>
+        <input type="hidden" id="actor" value="出纳">
+        <span class="build" id="buildTag" title="前端版本：如果这里不是最新日期，说明浏览器用的是旧缓存，请按 Ctrl+F5 强制刷新">前端 11-09g</span>
+        <span><span class="dot"></span><span id="dbStatus">SQLite 已连接 · 迁移 v19</span></span>
+      </div>
+    </header>
+    <div class="content" id="page"><details class="page-help" data-help="风险预警：税负率偏离、现金流不足、账龄超期等规则⟦预警分级 高 / 中 / 低，阈值可在分析规则中调整">
+    <summary><span class="ph-ico">💡</span><b>风险预警</b>
+      <span class="ph-text">风险预警：税负率偏离、现金流不足、账龄超期等规则</span>
+      <span class="ph-more">口径 / 计算方式 ▾</span></summary>
+    <div class="ph-body"><div class="ph-row"><span class="ph-k">计算方式 / 口径</span><span>预警分级 高 / 中 / 低，阈值可在分析规则中调整</span></div><div class="ph-row"><span class="ph-k">小提示</span><span>把鼠标悬浮到本页任意按钮、表头或卡片标题，可看对应指标的解释。</span></div></div>
+  </details><div class="page-head"><div><h2>风险预警</h2>
+      <div class="hint">按可量化规则实时扫描 · 检查时间 2026-11-11T21:55:56 · 阈值可在下方调整</div></div>
+      <button class="btn btn-p" onclick="render()">⟳ 立即重新扫描</button></div>
+      <div class="kpis">
+        <div class="kpi"><div class="label">高风险</div><div class="value" style="color:var(--red)">1</div></div>
+        <div class="kpi"><div class="label">中风险</div><div class="value" style="color:var(--orange)">2</div></div>
+        <div class="kpi"><div class="label">低风险</div><div class="value" style="color:var(--primary)">0</div></div>
+        <div class="kpi"><div class="label">整体状态</div><div class="value" style="font-size:17px;color:var(--red)">需要处理</div></div>
+      </div>
+      <div class="card"><h3>增值税一般纳税人认定预警 · 2026 新规</h3>
+      <div class="kpis">
+        <div class="kpi"><div class="label">当前状态</div><div class="value" style="font-size:19px;color:var(--green)">正常</div></div>
+        <div class="kpi"><div class="label">连续12个月累计销售额</div><div class="value">¥ 74,500.00</div></div>
+        <div class="kpi"><div class="label">认定标准</div><div class="value">¥ 5,000,000.00</div></div>
+        <div class="kpi"><div class="label">距标准还差</div><div class="value" style="color:var(--green)">¥ 4,925,500.00</div></div>
+      </div>
+      <div style="height:8px;background:var(--grey-bg);border-radius:8px;overflow:hidden">
+        <div style="width:1.49%;height:100%;background:var(--green);border-radius:8px"></div></div>
+      <div class="muted" style="margin-top:6px">已达标准 1.49% · 统计区间 2026-09 ~ 2026-11 · 按近 3 月月均 ¥24,833.33 推算，预计 2043-06 达标</div>
+      <div class="banner" style="margin-top:12px">当前滚动销售额低于认定标准，继续按小规模纳税人管理。</div>
+      <p class="muted" style="margin-top:8px">《中华人民共和国增值税法实施条例》2026-01-01 施行：小规模纳税人为年应征增值税销售额未超过 500 万元的纳税人；年应征增值税销售额指连续不超过 12 个月或 4 个季度经营期内累计销售额。偶然销售无形资产、转让不动产不计入；登记为一般纳税人后不得转回小规模。</p>
+      <h3 style="margin-top:14px">近 12 个月收入核对（会计收入 / 发票销售额）</h3>
+      <div class="scroll"><table><thead><tr><th>月份</th><th class="num has-help" data-help="利润表首行，也是税负率、增长率、周转率的共同分母⟦主营业务收入 + 其他业务收入（按已过账贷方发生额归集，排除结转凭证）⟦">会计营业收入</th>
+        <th class="num">发票销售额</th><th class="num">差额（票－账）</th></tr></thead>
+        <tbody><tr><td>2026-09</td>
+      <td class="num">¥ 18,000.00</td><td class="num">¥ 0.00</td>
+      <td class="num">¥ -18,000.00</td></tr><tr><td>2026-10</td>
+      <td class="num">¥ 0.00</td><td class="num">¥ 0.00</td>
+      <td class="num">¥ 0.00</td></tr><tr><td>2026-11</td>
+      <td class="num">¥ 56,500.00</td><td class="num">¥ 50,000.00</td>
+      <td class="num">¥ -6,500.00</td></tr></tbody></table></div>
+      <p class="muted" style="margin-top:6px">窗口内发票销售额合计 ¥50,000.00，与会计收入相差 ¥-24,500.00；差异较大时请核对未开票收入或跨期开票。</p></div>
+      <div class="card"><div class="bs-alert"><span class="tag alert-high">高</span>
+        <div style="flex:1"><b>盘点数与账面余额不符</b>　<span class="tag t-draft">账实核对</span>
+        <div class="muted" style="margin-top:3px">cash 2026-11-06 实存 ¥5,000.00 vs 账面 ¥2,838.50；cash 2026-11-06 实存 ¥5,000.01 vs 账面 ¥2,838.50；cash 2026-11-06 实存 ¥4,999.99 vs 账面 ¥2,838.50</div></div></div><div class="bs-alert"><span class="tag alert-medium">中</span>
+        <div style="flex:1"><b>存在 2 笔大额收支（≥ ¥50,000）</b>　<span class="tag t-draft">大额收支</span>
+        <div class="muted" style="margin-top:3px">2026-11-08 收 ¥56,500.00 [演示]销售技术服务；2026-11-08 收 ¥56,500.00 [演示]销售技术服务</div></div></div><div class="bs-alert"><span class="tag alert-medium">中</span>
+        <div style="flex:1"><b>4 笔流水超过 7 天未核对</b>　<span class="tag t-draft has-help" data-help="把银行对账单流水与系统日记账逐笔核对⟦按日期 + 金额 + 方向匹配；未匹配流水进入待办并可能触发超期预警⟦">对账</span>
+        <div class="muted" style="margin-top:3px">最早 2026-09-18，请在日记账中勾销</div></div></div></div>
+      <div class="card"><h3>预警阈值设置</h3>
+        <div class="frow">
+          <div><label>现金安全线（元）</label><input type="number" step="0.01" id="rk_cash" value="2000"></div>
+          <div><label>银行安全线（元）</label><input type="number" step="0.01" id="rk_bank" value="10000"></div>
+          <div><label>大额收支标准（元）</label><input type="number" step="0.01" id="rk_large" value="50000"></div>
+          <div><label>现金安全月数警戒</label><input type="number" step="0.1" id="rk_months" value="3"></div>
+          <div><label>流水核对天数</label><input type="number" id="rk_recon" value="7"></div>
+          <div><label>预算提醒线（%）</label><input type="number" id="rk_budget" value="80"></div>
+          <div><label>大屏刷新（秒）</label><input type="number" id="rk_refresh" value="10"></div>
+          <div><label>一般纳税人认定标准（元）</label><input type="number" step="0.01" id="rk_vat_threshold" value="5000000"></div>
+          <div><label>临近提醒线（%）</label><input type="number" id="rk_vat_warn" value="80"></div>
+          <div><label>当前税务登记身份</label><select id="rk_vat_registered">
+            <option value="small" selected="">小规模纳税人（启用预警）</option>
+            <option value="general">一般纳税人（已登记，不再预警）</option>
+          </select></div>
+        </div>
+        <button class="btn btn-p" onclick="saveRisk()">保存阈值</button>
+        <p class="muted" style="margin-top:8px">规则来自业界实践：现金安全月数 = 可用资金 ÷ 月均刚性支出（近 3 月），低于警戒线说明"还能撑多久"出了问题。</p>
+        <p class="muted" style="margin-top:4px">「当前税务登记身份」只控制这项合规预警是否启用，不改变税务中心里的税率计算设置。</p></div></div>
+  </div>
+</div>
+<div class="modal-mask" id="modalMask"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast"></div>
+<div class="impact-box" id="impactBox"></div>
+<!-- 前端按职责分层加载：工具 → 页面注册表 → 交互动作 → 组合根启动 -->
+<script src="/js/core.js"></script>
+<script src="/js/pages_base.js"></script>
+<script src="/js/pages_v25.js"></script>
+<script src="/js/pages_v26.js"></script>
+<script src="/js/pages_v28.js"></script>
+<script src="/js/actions_base.js"></script>
+<script src="/js/actions_v25.js"></script>
+<script src="/js/actions_v26.js"></script>
+<script src="/js/actions_v28.js"></script>
+<script src="/js/pages_work.js"></script>
+<script src="/js/help.js"></script>
+<script src="/js/motion.js"></script>
+<script src="/js/app.js"></script><div id="helpTip" class="help-tip" role="tooltip"></div>
+
+
+</body></html>
