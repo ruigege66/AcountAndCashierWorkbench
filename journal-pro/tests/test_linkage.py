@@ -663,6 +663,83 @@ def main():
     check("  临近提醒线可调：50% 时 90% 完成度升级为中级",
           S.vat_taxpayer_status(c)["level"] == "中")
 
+    # ---------- 20. 备份恢复闭环：不能把其它功能的规则回退掉 ----------
+    print("\n--- 20. 备份 → 恢复 → 触发器 / 演示数据清理联动 ---")
+    c = new_case("restore")
+    c.execute("INSERT INTO subjects(code,name,category,direction) VALUES('9099','恢复测试','资产','借')")
+    c.commit()
+    names = ("trg_journal_no_delete", "trg_vline_no_delete",
+             "trg_journal_immutable", "trg_vline_immutable")
+    def trg_sql(n):
+        r = db.one(c, "SELECT sql FROM sqlite_master WHERE type='trigger' AND name=?", (n,))
+        return r["sql"] if r else ""
+    before = {n: trg_sql(n) for n in names}
+    payload = S.backup(c, None, None, {})
+    res = S.restore(c, None, {"confirm": True, "data": payload}, {})
+    check("㉚ 备份可完整恢复（含业务数据）", res["ok"] and
+          db.one(c, "SELECT COUNT(*) n FROM subjects WHERE code='9099'")["n"] == 1,
+          f"恢复 {res['restored']} 行")
+    check("  恢复后四个账本触发器 SQL 原样保留",
+          all(trg_sql(n) == before[n] for n in names))
+    check("  恢复后 018 演示数据可清理规则仍在",
+          "WHEN" in trg_sql("trg_journal_no_delete"))
+    c.execute("""INSERT INTO journal(journal_date,period,account_kind,direction,amount,
+        balance_after,summary,subject_code,recon_status,created_at)
+        VALUES('2026-11-01','2026-11','bank','in',100,0,'[演示]清理','6001','未核对','2026-11-01')""")
+    c.commit()
+    try:
+        c.execute("DELETE FROM journal WHERE summary LIKE '[演示]%'")
+        c.commit()
+        check("  恢复后演示流水仍可清理（跨功能未被破坏）", True)
+    except Exception as e:
+        check("  恢复后演示流水仍可清理（跨功能未被破坏）", False, str(e)[:60])
+    c.execute("""INSERT INTO journal(journal_date,period,account_kind,direction,amount,
+        balance_after,summary,subject_code,recon_status,created_at)
+        VALUES('2026-11-02','2026-11','bank','in',200,0,'真实业务','6001','未核对','2026-11-02')""")
+    c.commit()
+    try:
+        c.execute("DELETE FROM journal WHERE summary='真实业务'")
+        check("  恢复后真实流水仍禁止删除", False, "账本保护失效")
+    except Exception:
+        check("  恢复后真实流水仍禁止删除", True)
+
+    # ---------- 21. 输入边界：非法金额 / 日期 / 资产参数不得污染账套 ----------
+    print("\n--- 21. 输入边界：脏数据不得进入期间与报表 ---")
+    c = new_case("boundary")
+    n_period0 = db.one(c, "SELECT COUNT(*) n FROM periods")["n"]
+    bad_amount = 0
+    for v in ("nan", "inf", "-inf", "1e308", "0", "-5"):
+        expect_error(f"  拒绝异常金额 {v}", lambda v=v: S.add_doc(
+            c, None, {"doc_type": "receipt", "doc_date": "2026-11-05",
+                      "amount": v, "subject_code": "6001"}, {}))
+        bad_amount += 1
+    check("㉛ 六类异常金额全部拒绝", bad_amount == 6)
+    for d in ("not-a-date", "2026-13-45", "2026-2-3", "2026-02-30"):
+        expect_error(f"  拒绝非法日期 {d}", lambda d=d: S.add_doc(
+            c, None, {"doc_type": "receipt", "doc_date": d,
+                      "amount": 100, "subject_code": "6001"}, {}))
+    periods = [r["period"] for r in db.q(c, "SELECT period FROM periods")]
+    check("  未生成非法会计期间", all(len(p) == 7 and p[4] == "-" and p[:4].isdigit() for p in periods),
+          str(periods))
+    check("  期间数量未增加", len(periods) == n_period0)
+    for v in (-100, 0, "nan", "inf"):
+        expect_error(f"  拒绝异常资产原值 {v}", lambda v=v: S.add_asset(
+            c, None, {"name": "边界", "original_value": v,
+                      "asset_no": "B" + str(abs(hash(str(v))) % 10000)}, {}))
+    for m in (-12, 0, 9999):
+        expect_error(f"  拒绝异常折旧月数 {m}", lambda m=m: S.add_asset(
+            c, None, {"name": "月数", "original_value": 1000,
+                      "useful_life_months": m, "asset_no": "L" + str(abs(m))}, {}))
+    ok_doc = S.add_doc(c, None, {"doc_type": "receipt", "doc_date": "2026-11-06",
+                                 "amount": 1234.56, "subject_code": "6001"}, {})
+    ok_asset = S.add_asset(c, None, {"name": "正常资产", "original_value": 12000,
+                                     "salvage_rate": 0.05, "useful_life_months": 60,
+                                     "asset_no": "OK-1"}, {})
+    c.commit()
+    check("  合法单据与资产仍可正常录入", bool(ok_doc.get("id")) and ok_asset["ok"])
+    check("  拒绝后账套仍平衡（无脏金额进入报表）",
+          S.build_balance_sheet(c, PERIOD)["balanced"])
+
     print(f"\n{'=' * 56}\n通过 {len(PASS)} 项，失败 {len(FAIL)} 项")
     return 0 if not FAIL else 1
 

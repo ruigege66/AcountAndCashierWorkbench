@@ -5,6 +5,7 @@ import csv
 import hashlib
 import io
 import json
+import math
 import os
 import re
 import traceback
@@ -32,6 +33,37 @@ get_router()
 # ---------------- 通用工具 ----------------
 def period_of(d):
     return (d or "")[:7]
+
+
+def valid_date(d, label="日期"):
+    """严格 YYYY-MM-DD 且为真实日历日期，避免生成 not-a-d / 2026-13 这类脏期间。"""
+    if not isinstance(d, str) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", d):
+        raise ApiError(f"{label}格式应为 YYYY-MM-DD，例如 2026-11-11")
+    try:
+        datetime.strptime(d, "%Y-%m-%d")
+    except ValueError:
+        raise ApiError(f"{label}不是有效日期：{d}")
+    return d
+
+
+def finite_number(v, label="数值"):
+    """拒绝 NaN / 正负无穷，避免把脏值写进账套污染报表。"""
+    try:
+        x = float(v or 0)
+    except (TypeError, ValueError):
+        raise ApiError(f"{label}必须是数字")
+    if not math.isfinite(x):
+        raise ApiError(f"{label}必须是有效数字（不接受无穷大或非数值）")
+    return x
+
+
+def positive_amount(v, label="金额", cap=1e12):
+    x = finite_number(v, label)
+    if x <= 0:
+        raise ApiError(f"{label}必须大于 0")
+    if x > cap:
+        raise ApiError(f"{label}超出合理范围（上限 ¥{cap:,.0f}）")
+    return x
 
 
 def ensure_period(conn, period):
@@ -101,15 +133,21 @@ def doc_label(t):
 
 # ---------------- 凭证与过账 ----------------
 def create_voucher(conn, data, actor="系统", auto_post=False):
-    d = data.get("voucher_date") or datetime.now().strftime("%Y-%m-%d")
+    d = valid_date(data.get("voucher_date") or datetime.now().strftime("%Y-%m-%d"), "凭证日期")
     period = period_of(d)
     ensure_period(conn, period)
     assert_open(conn, period)
     lines = data.get("lines") or []
     if len(lines) < 2:
         raise ApiError("凭证至少需要两条分录")
-    dr = sum(float(x.get("debit") or 0) for x in lines)
-    cr = sum(float(x.get("credit") or 0) for x in lines)
+    dr = cr = 0.0
+    for ln in lines:
+        dbt = finite_number(ln.get("debit"), "分录借方金额")
+        cdt = finite_number(ln.get("credit"), "分录贷方金额")
+        dr += dbt
+        cr += cdt
+    if not math.isfinite(dr) or not math.isfinite(cr):
+        raise ApiError("分录金额必须是有效数字")
     if round(dr, 2) != round(cr, 2) or dr <= 0:
         raise ApiError(f"借贷不平衡：借方 {dr:.2f} / 贷方 {cr:.2f}")
     vtype = data.get("voucher_type") or "转"
@@ -259,10 +297,8 @@ def add_doc(conn, m, body, qs):
     t = body.get("doc_type")
     if t not in ("payment", "receipt", "advance", "reimbursement"):
         raise ApiError("单据类型无效")
-    d = body.get("doc_date") or datetime.now().strftime("%Y-%m-%d")
-    amount = float(body.get("amount") or 0)
-    if amount <= 0:
-        raise ApiError("金额必须大于 0")
+    d = valid_date(body.get("doc_date") or datetime.now().strftime("%Y-%m-%d"), "单据日期")
+    amount = positive_amount(body.get("amount"), "单据金额")
     if not body.get("subject_code"):
         raise ApiError("请选择对方科目")
     period = period_of(d)
@@ -436,11 +472,11 @@ def list_journal(conn, m, body, qs):
 @route("POST", r"/api/journal/manual")
 def manual_journal(conn, m, body, qs):
     """出纳直接登记现金/银行收支：后台自动补齐一张凭证并过账"""
-    d = body.get("date") or datetime.now().strftime("%Y-%m-%d")
-    amount = float(body.get("amount") or 0)
+    d = valid_date(body.get("date") or datetime.now().strftime("%Y-%m-%d"), "流水日期")
     direction = body.get("direction")
-    if direction not in ("in", "out") or amount <= 0:
-        raise ApiError("请选择收/付方向并填写金额")
+    if direction not in ("in", "out"):
+        raise ApiError("请选择收/付方向")
+    amount = positive_amount(body.get("amount"), "收支金额")
     kind = body.get("account_kind") or "cash"
     cash_code = "1001" if kind == "cash" else "1002"
     other = body.get("subject_code")
@@ -822,10 +858,13 @@ def restore(conn, m, body, qs):
         raise ApiError("备份文件格式不正确")
     with conn:
         conn.execute("PRAGMA defer_foreign_keys = ON")
-        # 账本不可变触发器仅对业务写入生效；全量恢复时临时摘除并原样重建
-        triggers = [r["name"] for r in q(conn, "SELECT name FROM sqlite_master WHERE type='trigger' AND name LIKE 'trg_%'")]
+        # 账本不可变触发器仅对业务写入生效；全量恢复时临时摘除并原样重建。
+        # 必须从 sqlite_master 读回原 SQL：硬编码会与后续迁移失配
+        # （曾导致恢复后 018 的「演示数据可清理」规则被悄悄回退成旧规则）。
+        triggers = q(conn, """SELECT name, sql FROM sqlite_master
+            WHERE type='trigger' AND name LIKE 'trg_%' AND sql IS NOT NULL""")
         for t in triggers:
-            conn.execute(f"DROP TRIGGER IF EXISTS {t}")
+            conn.execute(f"DROP TRIGGER IF EXISTS {t['name']}")
         try:
             for t in reversed(TABLES):
                 conn.execute(f"DELETE FROM {t}")
@@ -839,20 +878,10 @@ def restore(conn, m, body, qs):
                     conn.execute(sql, [r[c] for c in cols])
             audit(conn, "恢复备份", "system", None, f"导入 {sum(len(tables.get(t) or []) for t in TABLES)} 行")
         finally:
-            conn.executescript("""
-CREATE TRIGGER IF NOT EXISTS trg_journal_immutable BEFORE UPDATE ON journal
-WHEN OLD.amount <> NEW.amount OR OLD.direction <> NEW.direction
-  OR OLD.journal_date <> NEW.journal_date OR OLD.voucher_id IS NOT NEW.voucher_id
-BEGIN SELECT RAISE(ABORT, '已登记日记账不可修改，请使用红字冲销'); END;
-CREATE TRIGGER IF NOT EXISTS trg_journal_no_delete BEFORE DELETE ON journal
-BEGIN SELECT RAISE(ABORT, '已登记日记账不可删除，更正请使用红字冲销'); END;
-CREATE TRIGGER IF NOT EXISTS trg_vline_immutable BEFORE UPDATE ON voucher_lines
-WHEN (SELECT status FROM vouchers WHERE id = OLD.voucher_id) = 'posted'
-BEGIN SELECT RAISE(ABORT, '已过账凭证分录不可修改，请使用红字冲销'); END;
-CREATE TRIGGER IF NOT EXISTS trg_vline_no_delete BEFORE DELETE ON voucher_lines
-WHEN (SELECT status FROM vouchers WHERE id = OLD.voucher_id) = 'posted'
-BEGIN SELECT RAISE(ABORT, '已过账凭证分录不可删除'); END;
-""")
+            # 原样重建。用 execute 而非 executescript，保持在同一事务内：
+            # 任一条重建失败则整个恢复回滚，数据库不会处于「无触发器保护」状态。
+            for t in triggers:
+                conn.execute(t["sql"])
     return {"ok": True, "restored": sum(len(tables.get(t) or []) for t in TABLES)}
 
 
@@ -933,17 +962,15 @@ def list_invoices(conn, m, body, qs):
 
 @route("POST", r"/api/invoices")
 def add_invoice(conn, m, body, qs):
-    d = body.get("invoice_date") or datetime.now().strftime("%Y-%m-%d")
+    d = valid_date(body.get("invoice_date") or datetime.now().strftime("%Y-%m-%d"), "发票日期")
     no = (body.get("invoice_no") or "").strip()
     kind = body.get("kind")
     if not no or kind not in ("进项", "销项"):
         raise ApiError("请填写发票号码与类型")
     if one(conn, "SELECT id FROM invoices WHERE invoice_no=? AND kind=?", (no, kind)):
         raise ApiError(f"发票号「{no}」已存在，疑似重复入账（发票查重）")
-    amount = float(body.get("amount") or 0)
-    tax = float(body.get("tax_amount") or 0)
-    if amount <= 0:
-        raise ApiError("不含税金额必须大于 0")
+    amount = positive_amount(body.get("amount"), "不含税金额")
+    tax = finite_number(body.get("tax_amount"), "税额")
     period = period_of(d)
     ensure_period(conn, period); assert_open(conn, period)
     cur = conn.execute("""INSERT INTO invoices(invoice_no,invoice_code,kind,invoice_date,period,
@@ -1213,15 +1240,22 @@ def add_asset(conn, m, body, qs):
     name = (body.get("name") or "").strip()
     if not name:
         raise ApiError("资产名称不能为空")
-    d = body.get("purchase_date") or datetime.now().strftime("%Y-%m-%d")
+    d = valid_date(body.get("purchase_date") or datetime.now().strftime("%Y-%m-%d"), "购置日期")
+    value = positive_amount(body.get("original_value"), "资产原值")
+    salvage = finite_number(body.get("salvage_rate") if body.get("salvage_rate") not in (None, "") else 0.05, "残值率")
+    if not 0 <= salvage < 1:
+        raise ApiError("残值率应在 0 到 1 之间")
+    raw_life = body.get("useful_life_months")
+    life = int(finite_number(raw_life if raw_life not in (None, "") else 60, "使用月数"))
+    if not 1 <= life <= 600:
+        raise ApiError("使用月数应为 1 到 600 个月")
     if one(conn, "SELECT id FROM assets WHERE asset_no=?", (no,)):
         raise ApiError("资产编号重复")
     cur = conn.execute("""INSERT INTO assets(asset_no,name,category,purchase_date,original_value,
             salvage_rate,useful_life_months,start_period,accumulated,expense_subject,dept,status,note,created_at)
             VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
         (no, name, body.get("category") or "电子设备", d, float(body.get("original_value") or 0),
-         float(body.get("salvage_rate") if body.get("salvage_rate") not in (None, "") else 0.05),
-         int(body.get("useful_life_months") or 60), body.get("start_period") or period_of(d),
+         salvage, life, body.get("start_period") or period_of(d),
          0, body.get("expense_subject") or setting(conn, "asset_expense_subject", "6602"),
          body.get("dept") or "", "在用", body.get("note") or "", now()))
     log(conn, "新增固定资产", "asset", cur.lastrowid, f"{no} {name} 原值 {body.get('original_value')}", body.get("actor") or "系统")
