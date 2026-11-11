@@ -165,21 +165,33 @@ console.log('内联处理函数:', called.size, '| 缺失:', missing.length ? mi
 console.log('侧栏四视角:', navErrors.length ? navErrors.join(' | ') : '全部正常');
 console.log('go/goPage 字面量目标:', gotoTargets.size, '| 未注册:', badTargets.length ? badTargets.join(', ') : '（无）');
 console.log('PAGES 注册页面数:', pages.length);
-// ⑥ 角色下拉必须同时联动「侧栏视角 + 审计操作人 + 下拉选中值」
+// ⑥ 角色菜单必须同时联动「侧栏视角 + 审计操作人 + 菜单显示 + 选中态」
 let role = null, roleOK = false;
 try {
   role = JSON.parse(vm.runInContext(`(function(){
     const orig = render; render = function(){};
     try {
       setRole('manager');
-      const a = { pos: currentPosition(), actor: actor(), sel: $('roleSwitch').value };
+      const a = { pos: currentPosition(), actor: actor(),
+                  name: $('roleCurrentName').textContent,
+                  actorLabel: $('roleActorName').textContent };
+      toggleRoleMenu();
+      a.menuOpen = $('roleMenu').classList.contains('open');
+      closeRoleMenu();
+      a.menuClosed = !$('roleMenu').classList.contains('open');
+      pickRole('executive');
+      a.picked = currentPosition();
+      a.pickedName = $('roleCurrentName').textContent;
       setRole('all');                       // 复原，避免污染其它断言
       a.restored = currentPosition();
       return JSON.stringify(a);
     } finally { render = orig; }
   })()`, ctx));
   roleOK = role.pos === 'manager' && role.actor === '总账会计'
-    && role.sel === 'manager' && role.restored === 'all';
+    && role.name === '总账会计 / 税务主管' && role.actorLabel === '总账会计'
+    && role.menuOpen === true && role.menuClosed === true
+    && role.picked === 'executive' && role.pickedName === '财务总监 / CFO'
+    && role.restored === 'all';
 } catch (e) { role = { error: e.message }; }
 
 // ⑦ 功能说明体系：每个注册页面都要有说明，页面内关键词规则与三个组件齐备

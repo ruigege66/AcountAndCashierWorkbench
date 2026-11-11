@@ -131,13 +131,17 @@ def main():
           f"令牌={'OK' if vars_ok else '缺失'} / 链路={'OK' if chain_ok else '断裂'} / {len(css)} 字节 CSS")
 
     # ⑦ 角色下拉：手填「操作员」框已移除，审计操作人由角色自动决定
-    role_ok = ('id="roleSwitch"' in html and 'onchange="setRole(' in html
+    role_ok = ('id="roleSwitch"' in html and 'id="roleMenu"' in html
+               and 'onclick="toggleRoleMenu()"' in html
+               and "onclick=\"pickRole('all')\"" in html
                and 'type="hidden" id="actor"' in html and '<input id="actor"' not in html
-               and 'ROLE_ACTORS' in core_js and 'function applyRole' in nav
+               and 'dbStatus' not in html
+               and 'ROLE_ACTORS' in core_js and 'function syncRoleUI' in core_js
+               and 'function pickRole' in core_js and 'function applyRole' in nav
                and 'setPosition(p) { applyRole(p); }' in nav
-               and 'ROLE_ACTORS[_role]' in app_js and '.role-pick' in css)
-    check("  角色下拉联动完整（视角/操作人/侧栏三处同步）", role_ok,
-          "下拉+隐藏操作人+applyRole 统一入口")
+               and 'syncRoleUI(_role)' in app_js and '.role-menu' in css)
+    check("  高级角色菜单联动完整（视角/操作人/菜单态）", role_ok,
+          "自定义下拉 + 隐藏操作人 + applyRole 统一入口")
 
     # ⑧ 功能说明体系：重排后的分组、每页说明、悬浮组件与半透明背景都要在
     help_js = read(os.path.join(ROOT, "public", "js", "help.js"))
@@ -195,6 +199,14 @@ def main():
               and 'risk_vat_registered' in act_js)
     check("  2026 一般纳税人认定预警完整（后端/前端/配置）", vat_ok,
           "连续12个月滚动 / 500万标准 / 中文卡片 / 三项可配置")
+
+    # ⑫ 数据库容量查看（顶栏「存储」按钮，只读）
+    storage_ok = ('def system_storage' in srv and '/api/system/storage' in srv
+                  and 'STORAGE_TABLES' in srv and 'function openStorage' in core_js
+                  and 'onclick="openStorage()"' in html
+                  and 'dbStatus' not in act_js and 'dbStatus' not in html)
+    check("  数据库容量查看完整（容量/记录数/备份/审计链）", storage_ok,
+          "顶栏不再显示连接状态，改为按需查看")
 
     if not node:
         print("  [--] 未找到 node，动态渲染校验已跳过（静态校验通过即放行）")

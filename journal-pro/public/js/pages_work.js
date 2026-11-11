@@ -285,7 +285,7 @@ function applyRole(p) {
   const valid = ['all', 'business', 'manager', 'executive'];
   const role = valid.indexOf(p) >= 0 ? p : 'all';
   try { localStorage.setItem('position', role); } catch (e) { warn(e); }
-  const sel = $('roleSwitch'); if (sel) sel.value = role;
+  if (typeof syncRoleUI === 'function') { try { syncRoleUI(role); } catch (e2) { warn(e2); } }
   const a = $('actor'); if (a) a.value = ROLE_ACTORS[role] || '系统';
   try { renderNav(); } catch (e) { warn(e); }
   try { render(); } catch (e) { warn(e); }

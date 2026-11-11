@@ -18,6 +18,108 @@ function warn(e, tag) {
   try { console.warn('[journal-pro] ' + (tag || '操作未完成') + ':', (e && e.message) || e || ''); }
   catch (_) { return; }
 }
+/* ---------- 顶栏：工作角色切换（自定义下拉） ---------- */
+const ROLE_META = {
+  all: { name: '全部功能', desc: '查看全部 65 项功能' },
+  business: { name: '出纳 / 往来会计', desc: '单据 · 日记账 · 收付款' },
+  manager: { name: '总账会计 / 税务主管', desc: '凭证 · 报表 · 全税种' },
+  executive: { name: '财务总监 / CFO', desc: '经营分析 · 风控 · 决策' }
+};
+
+function syncRoleUI(role) {
+  const r = ROLE_META[role] || ROLE_META.all;
+  try {
+    const n = $('roleCurrentName'), d = $('roleCurrentDesc'), a = $('roleActorName');
+    if (n) n.textContent = r.name;
+    if (d) d.textContent = r.desc;
+    if (a) a.textContent = ROLE_ACTORS[role] || '系统';
+    const items = document.querySelectorAll ? document.querySelectorAll('.rm-item') : [];
+    Array.prototype.forEach.call(items, function (it) {
+      const on = it.getAttribute && it.getAttribute('data-role') === role;
+      if (it.classList) it.classList.toggle('active', !!on);
+    });
+  } catch (e) { warn(e); }
+}
+
+function closeRoleMenu() {
+  try {
+    const m = $('roleMenu'), t = $('roleTrigger');
+    if (m && m.classList) m.classList.remove('open');
+    if (t && t.setAttribute) t.setAttribute('aria-expanded', 'false');
+  } catch (e) { warn(e); }
+}
+
+function toggleRoleMenu() {
+  try {
+    const m = $('roleMenu'), t = $('roleTrigger');
+    if (!m || !m.classList) return;
+    const open = typeof m.classList.contains === 'function' && m.classList.contains('open');
+    if (open) closeRoleMenu();
+    else {
+      m.classList.add('open');
+      if (t && t.setAttribute) t.setAttribute('aria-expanded', 'true');
+    }
+  } catch (e) { warn(e); }
+}
+
+function pickRole(p) {
+  closeRoleMenu();
+  try { if (typeof applyRole === 'function') applyRole(p); } catch (e) { warn(e); }
+  syncRoleUI(p);
+}
+
+function initRoleMenu() {
+  try {
+    document.addEventListener('click', function (e) {
+      const t = e.target;
+      const inside = t && t.closest ? t.closest('.role-switch') : null;
+      if (!inside) closeRoleMenu();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closeRoleMenu();
+    });
+  } catch (e) { warn(e); }
+}
+
+/* ---------- 顶栏：数据库容量与运行情况（只读查看） ---------- */
+async function openStorage() {
+  try {
+    closeRoleMenu();
+    const d = await api('/api/system/storage');
+    const fmt = n => (Number(n) || 0) >= 1024 * 1024
+      ? ((Number(n) || 0) / 1024 / 1024).toFixed(2) + ' MB'
+      : ((Number(n) || 0) / 1024).toFixed(1) + ' KB';
+    const num = n => (Number(n) || 0).toLocaleString('zh-CN');
+    const kpi = (label, value, color) => `<div class="kpi"><div class="label">${label}</div>
+      <div class="value" style="font-size:19px${color ? ';color:' + color : ''}">${value}</div></div>`;
+    const rows = (d.tables || []).map(x => `<tr><td>${esc(x.name)}</td>
+      <td class="num">${num(x.rows)}</td><td class="muted">${esc(x.note || '')}</td></tr>`).join('');
+    const line = (k, v) => `<div class="stat-line"><span>${k}</span><b>${v}</b></div>`;
+    $('modal').innerHTML = `<div style="position:relative"><h3>数据库与存储</h3>
+      <button type="button" class="btn btn-g btn-sm" onclick="closeModal()"
+        style="position:absolute;right:0;top:-4px;padding:3px 10px" aria-label="关闭">✕ 关闭</button></div>
+      <div class="kpis" style="grid-template-columns:repeat(auto-fit,minmax(145px,1fr))">
+        ${kpi('账套文件大小', fmt(d.total_size))}
+        ${kpi('数据表', (d.tables || []).length + ' 张')}
+        ${kpi('本地备份', (d.backup_count || 0) + ' 份')}
+        ${kpi('审计链', d.audit_intact ? '完整' : '异常', d.audit_intact ? 'var(--green)' : 'var(--red)')}
+      </div>
+      <div class="card"><h3>容量与运行情况</h3>
+        ${line('主数据库', fmt(d.db_size))}
+        ${line('事务日志（WAL）', fmt(d.wal_size))}
+        ${line('数据结构版本', '第 ' + num(d.migration) + ' 版')}
+        ${line('最近本地备份', esc(d.backup_latest || '暂无'))}
+        ${line('审计日志', num(d.audit_total) + ' 条')}
+      </div>
+      <div class="card"><h3>各表记录数</h3><div class="scroll"><table>
+        <thead><tr><th>数据表</th><th class="num">记录数</th><th>说明</th></tr></thead>
+        <tbody>${rows}</tbody></table></div></div>
+      <div class="banner">${esc(d.note || '')}</div>
+      <div class="actions"><button type="button" class="btn btn-g" onclick="closeModal()">关闭</button></div>`;
+    $('modalMask').classList.add('show');
+  } catch (e) { toast('✗ ' + e.message, 3500); }
+}
+
 async function api(path, method = 'GET', body) {
   const opt = { method, headers: {} };
   if (body !== undefined) { opt.headers['Content-Type'] = 'application/json'; opt.body = JSON.stringify(body); }

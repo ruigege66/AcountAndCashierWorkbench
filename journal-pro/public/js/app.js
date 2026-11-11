@@ -15,9 +15,9 @@ try {
 /* 角色下拉与审计操作人：刷新后按本地偏好还原，不显示成默认第一项 */
 try {
   const _role = localStorage.getItem('position') || 'all';
-  const _sel = document.getElementById('roleSwitch');
-  if (_sel) _sel.value = _role;
   const _a = document.getElementById('actor');
+  if (typeof syncRoleUI === 'function') syncRoleUI(_role);
+  if (typeof initRoleMenu === 'function') initRoleMenu();
   if (_a) _a.value = ROLE_ACTORS[_role] || '系统';
 } catch (e) { warn(e); }
 

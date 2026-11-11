@@ -2155,6 +2155,64 @@ def save_risk_settings(conn, m, body, qs):
     return {"ok": True}
 
 
+# ---------------- 本机数据库容量与运行情况（只读） ----------------
+STORAGE_TABLES = [
+    ("业务单据", "docs", "付款 / 收款 / 备用金 / 报销"),
+    ("记账凭证", "vouchers", "含草稿与已过账"),
+    ("凭证分录", "voucher_lines", "借贷明细"),
+    ("出纳日记账", "journal", "现金 / 银行流水"),
+    ("进销项发票", "invoices", "发票台账"),
+    ("固定资产", "assets", "资产卡片"),
+    ("银行对账单", "bank_statements", "导入的对账流水"),
+    ("会计科目", "subjects", "科目表"),
+    ("往来单位", "counterparties", "客户 / 供应商"),
+    ("审计日志", "audit_logs", "哈希链留痕"),
+    ("报表快照", "report_snapshots", "归档的报表版本"),
+    ("附件", "attachments", "上传的凭证附件"),
+]
+
+
+@route("GET", r"/api/system/storage")
+def system_storage(conn, m, body, qs):
+    """给「数据库与存储」查看面板用：容量、记录数、迁移版本、备份与审计链。"""
+    import db as _db
+    path = _db.DB_PATH
+    wal = path + "-wal"
+    size = os.path.getsize(path) if os.path.isfile(path) else 0
+    wsize = os.path.getsize(wal) if os.path.isfile(wal) else 0
+    tables = []
+    for name, tbl, note in STORAGE_TABLES:          # 表名来自内部白名单，非用户输入
+        try:
+            n = one(conn, f"SELECT COUNT(*) AS n FROM {tbl}")["n"]
+        except Exception:
+            n = 0
+        tables.append({"name": name, "rows": n, "note": note})
+    try:
+        vs = q(conn, "SELECT version FROM schema_version ORDER BY version")
+        migration = vs[-1]["version"] if vs else 0
+    except Exception:
+        migration = 0
+    backups = []
+    try:
+        backups = sorted(f for f in os.listdir(BACKUP_DIR)
+                         if f.startswith("backup-") and f.endswith(".json"))
+    except OSError:
+        pass
+    latest = ""
+    if backups:
+        try:
+            latest = datetime.fromtimestamp(
+                os.path.getmtime(os.path.join(BACKUP_DIR, backups[-1]))).strftime("%Y-%m-%d %H:%M")
+        except OSError:
+            pass
+    chain = verify_audit_chain(conn)
+    return {"db_size": size, "wal_size": wsize, "total_size": size + wsize,
+            "migration": migration, "tables": tables,
+            "backup_count": len(backups), "backup_latest": latest,
+            "audit_intact": chain["intact"], "audit_total": chain["total"],
+            "note": "账套数据只保存在本机，不上传云端；系统每天首次启动会自动留一份本地备份。"}
+
+
 @route("GET", r"/api/audit/stats")
 def audit_stats(conn, m, body, qs):
     by_action = q(conn, "SELECT action, COUNT(*) AS n FROM audit_logs GROUP BY action ORDER BY n DESC LIMIT 12")

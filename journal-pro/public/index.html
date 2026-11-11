@@ -122,19 +122,30 @@ try {
     <header>
       <div class="crumb" id="crumb">工作台</div>
       <div class="right">
-        <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="切换到极光深色" aria-label="切换界面主题">☾</button>
-        <label class="role-pick" title="切换角色：同时调整侧栏功能分层与审计日志的操作人">
-          <span class="role-ico">👤</span>
-          <select id="roleSwitch" onchange="setRole(this.value)" aria-label="切换当前角色">
-            <option value="all">全部功能（不分层）</option>
-            <option value="business">出纳 / 往来会计</option>
-            <option value="manager">总账会计 / 税务主管</option>
-            <option value="executive">财务总监 / CFO</option>
-          </select>
-        </label>
-        <input type="hidden" id="actor" value="出纳">
-        <span class="build" id="buildTag" title="前端版本：如果这里不是最新日期，说明浏览器用的是旧缓存，请按 Ctrl+F5 强制刷新">前端 11-11a</span>
-        <span><span class="dot"></span><span id="dbStatus">数据库连接中…</span></span>
+        <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="切换浅色 / 深色主题" aria-label="切换界面主题">☾</button>
+        <button class="storage-btn" id="storageBtn" onclick="openStorage()" title="查看数据库容量与运行情况" aria-label="查看数据库容量">
+          <span class="sb-ico">▤</span><span>存储</span></button>
+        <div class="role-switch" id="roleSwitch">
+          <button class="role-trigger" id="roleTrigger" onclick="toggleRoleMenu()" aria-haspopup="true" aria-expanded="false" aria-label="切换工作角色">
+            <span class="rt-ico">◈</span>
+            <span class="rt-text"><b id="roleCurrentName">全部功能</b><small id="roleCurrentDesc">查看全部 65 项功能</small></span>
+            <span class="rt-arrow">⌄</span>
+          </button>
+          <div class="role-menu" id="roleMenu" role="menu">
+            <div class="rm-head"><b>切换工作角色</b><small>同步调整侧栏功能分层与审计操作人</small></div>
+            <button class="rm-item" data-role="all" role="menuitem" onclick="pickRole('all')">
+              <span class="rm-ico i-all">◎</span><span class="rm-body"><b>全部功能</b><small>不分层 · 65 项功能全部可见</small></span><span class="rm-check">✓</span></button>
+            <button class="rm-item" data-role="business" role="menuitem" onclick="pickRole('business')">
+              <span class="rm-ico i-business">◉</span><span class="rm-body"><b>出纳 / 往来会计</b><small>单据 · 日记账 · 收付款</small></span><span class="rm-check">✓</span></button>
+            <button class="rm-item" data-role="manager" role="menuitem" onclick="pickRole('manager')">
+              <span class="rm-ico i-manager">◆</span><span class="rm-body"><b>总账会计 / 税务主管</b><small>凭证 · 报表 · 全税种</small></span><span class="rm-check">✓</span></button>
+            <button class="rm-item" data-role="executive" role="menuitem" onclick="pickRole('executive')">
+              <span class="rm-ico i-executive">★</span><span class="rm-body"><b>财务总监 / CFO</b><small>经营分析 · 风控 · 决策</small></span><span class="rm-check">✓</span></button>
+            <div class="rm-foot">当前审计操作人：<b id="roleActorName">出纳</b></div>
+          </div>
+          <input type="hidden" id="actor" value="出纳">
+        </div>
+        <span class="build" id="buildTag" title="前端版本：如果这里不是最新日期，说明浏览器用的是旧缓存，请按 Ctrl+F5 强制刷新">前端 11-11b</span>
       </div>
     </header>
     <div class="content" id="page"><div class="empty">加载中…</div></div>

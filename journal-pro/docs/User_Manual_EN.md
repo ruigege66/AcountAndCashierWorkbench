@@ -158,8 +158,13 @@ Click the round **☾ / ☀** button in the top-right corner to switch skins. Yo
 
 - Open `http://127.0.0.1:8765/?theme=dark` to start in dark mode (handy for bookmarking or demos); the URL stays in sync after switching.
 - Chart ticks and legend labels adapt automatically, so figures stay legible in both skins. **All 65 pages and every button behave identically** — only the appearance changes, nothing to re-learn.
-- The `前端 11-11a` tag in the top-right corner is the front-end build version. If the UI looks wrong or a button does nothing, press **Ctrl+F5** first; an older tag means the browser is using a cached page.
+- The `前端 11-11b` tag in the top-right corner is the front-end build version. If the UI looks wrong or a button does nothing, press **Ctrl+F5** first; an older tag means the browser is using a cached page.
 - Printing automatically hides the sidebar, light blooms and buttons, leaving clean white content.
+
+### 30.4.1 Two top-right controls
+
+- **Role switcher**: opens a card listing four roles (All functions / Cashier & AR-AP / General ledger & tax / CFO), each with a short description. Selecting one updates the sidebar tier and the audit-log operator. Click outside or press Escape to close.
+- **Storage**: shows the current database size, row counts for 12 business tables, schema version, local backup count and time, and audit-chain integrity. Data stays on this machine only. A successful database connection is the normal state, so no connection banner is displayed.
 
 ### 30.5 Understanding each feature: guide bars and hover tips
 

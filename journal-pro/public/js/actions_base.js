@@ -95,7 +95,6 @@ async function render() {
     }
     try { if (typeof attachHelp === 'function') attachHelp($('page')); } catch (_) { warn(_); }
     try { if (typeof refreshMotion === 'function') refreshMotion($('page')); } catch (_) { warn(_); }
-    $('dbStatus').textContent = 'SQLite 已连接 · 迁移 v' + S.meta.migrations.length;
     try { if (typeof highlightNav === 'function') highlightNav(S.page); } catch (_) { warn(_); }
   } catch (e) {
     $('page').innerHTML = `<div class="card"><h3>加载失败</h3><p class="muted">${esc(e.message)}</p></div>`;

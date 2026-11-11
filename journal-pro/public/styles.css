@@ -570,12 +570,67 @@ aside button.active::after{content:"";position:absolute;left:0;top:18%;bottom:18
   #navTree summary .ng-idx,#navTree summary .ng-count{box-shadow:none!important}
 }
 
+/* ---------- 顶栏：工作角色菜单 / 存储查看 ---------- */
+.storage-btn{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 11px;
+  border:1px solid var(--border);border-radius:999px;background:var(--card);
+  color:var(--text2);font-size:12px;font-family:inherit;font-weight:600;cursor:pointer;
+  box-shadow:var(--shadow-sm);transition:border-color .2s,color .2s,box-shadow .2s}
+.storage-btn:hover{color:var(--primary);border-color:var(--primary);box-shadow:var(--glow)}
+.storage-btn .sb-ico{font-size:13px;color:var(--primary)}
+
+.role-switch{position:relative}
+.role-trigger{display:inline-flex;align-items:center;gap:9px;height:38px;padding:0 11px 0 9px;
+  border:1px solid var(--border);border-radius:12px;background:var(--card);
+  color:var(--text);font-family:inherit;cursor:pointer;text-align:left;position:relative;
+  overflow:hidden;box-shadow:var(--shadow-sm);transition:border-color .2s,box-shadow .2s}
+.role-trigger::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:var(--grad-primary);opacity:.85}
+.role-trigger:hover,.role-trigger[aria-expanded="true"]{border-color:var(--primary);box-shadow:var(--glow)}
+.rt-ico{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;
+  border-radius:8px;color:#fff;background:var(--grad-primary);font-size:13px;flex-shrink:0}
+.rt-text{display:flex;flex-direction:column;line-height:1.25;min-width:100px}
+.rt-text b{font-size:12px;font-weight:700;white-space:nowrap}
+.rt-text small{font-size:10px;color:var(--text2);white-space:nowrap}
+.rt-arrow{font-size:13px;color:var(--text2);margin-left:2px}
+
+.role-menu{display:none;position:absolute;right:0;top:calc(100% + 9px);width:310px;z-index:120;
+  background:var(--card-solid);border:1px solid var(--border-strong);border-radius:14px;
+  box-shadow:var(--shadow-lg);padding:8px;overflow:hidden}
+.role-menu.open{display:block}
+.role-menu::before{content:"";position:absolute;left:0;right:0;top:0;height:2px;
+  background:var(--grad-primary)}
+.rm-head{padding:8px 10px 10px;border-bottom:1px solid var(--border);margin-bottom:6px}
+.rm-head b{display:block;font-size:12.5px;color:var(--text)}
+.rm-head small{display:block;font-size:10.5px;color:var(--text2);margin-top:3px}
+.rm-item{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;
+  border:1px solid transparent;border-radius:10px;background:transparent;color:var(--text);
+  font-family:inherit;text-align:left;cursor:pointer;position:relative;
+  transition:background-color .18s,border-color .18s}
+.rm-item:hover{background:var(--blue-bg);border-color:var(--border)}
+.rm-item.active{background:var(--blue-bg);border-color:var(--primary)}
+.rm-item.active::before{content:"";position:absolute;left:0;top:18%;bottom:18%;width:3px;
+  border-radius:3px;background:var(--grad-primary)}
+.rm-ico{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;
+  border-radius:9px;color:#fff;font-size:13px;flex-shrink:0;background:var(--grad-primary)}
+.rm-ico.i-business{background:linear-gradient(135deg,#0EA5A4,#38BDF8)}
+.rm-ico.i-manager{background:linear-gradient(135deg,#4F6EF7,#7A5AF8)}
+.rm-ico.i-executive{background:linear-gradient(135deg,#B45309,#F59E0B)}
+.rm-body{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.3}
+.rm-body b{font-size:12.5px;font-weight:700}
+.rm-body small{font-size:10.5px;color:var(--text2);margin-top:2px}
+.rm-check{font-size:13px;color:var(--primary);opacity:0;flex-shrink:0}
+.rm-item.active .rm-check{opacity:1}
+.rm-foot{padding:9px 10px 4px;margin-top:5px;border-top:1px solid var(--border);
+  font-size:10.5px;color:var(--text2)}
+.rm-foot b{color:var(--primary-dark)}
+@media(max-width:980px){.rt-text small,.storage-btn span:last-child{display:none}.rt-text{min-width:auto}}
+
 /* ---------- 无障碍 / 打印 ---------- */
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;
     transition-duration:.01ms!important;scroll-behavior:auto!important}}
 @media print{
   aside,header,.toolbar,.btn,.modal-mask,.toast,.theme-toggle,.main::before,
-  .help-tip,.page-help,.nav-hint,#motionLayers{display:none!important}
+  .help-tip,.page-help,.nav-hint,#motionLayers,.role-menu,.storage-btn{display:none!important}
   .content{padding:0}.card,.kpi{border:none;box-shadow:none;background:#fff;animation:none}
   body{background:#fff;color:#000}}
