@@ -158,7 +158,7 @@ Click the round **☾ / ☀** button in the top-right corner to switch skins. Yo
 
 - Open `http://127.0.0.1:8765/?theme=dark` to start in dark mode (handy for bookmarking or demos); the URL stays in sync after switching.
 - Chart ticks and legend labels adapt automatically, so figures stay legible in both skins. **All 65 pages and every button behave identically** — only the appearance changes, nothing to re-learn.
-- The `前端 11-11d` tag in the top-right corner is the front-end build version. If the UI looks wrong or a button does nothing, press **Ctrl+F5** first; an older tag means the browser is using a cached page.
+- The `前端 11-11e` tag in the top-right corner is the front-end build version. If the UI looks wrong or a button does nothing, press **Ctrl+F5** first; an older tag means the browser is using a cached page.
 - Printing automatically hides the sidebar, light blooms and buttons, leaving clean white content.
 
 ### 30.4.1 Two top-right controls

@@ -225,6 +225,18 @@ def main():
     check("  通用导出 / 报销单附件 / 三级导航齐备", feature_ok,
           "4 种通用格式 / 附件白名单 / 面包屑与返回")
 
+    # ⑭ 提示精确匹配 / 中文代号 / 整行点击
+    p25 = read(os.path.join(ROOT, "public", "js", "pages_v25.js"))
+    feats = read(os.path.join(ROOT, "features.py"))
+    readable_ok = ("new RegExp('^(?:'" in help_js and "data-help-skip" in help_js
+                   and "txt.length > 14" in help_js)
+    readable_ok = readable_ok and "rowAttr" in core_js and "DOC_CN" in feats
+    readable_ok = readable_ok and "todo-row" in p25 and "data-help-skip" in p25
+    readable_ok = readable_ok and ("前往处理 →" not in p25 and "查看 →" not in p25)
+    readable_ok = readable_ok and "click-row" in p25
+    check("  提示精确匹配 / 代号中文化 / 整行点击直达", readable_ok,
+          "杜绝关键词误配与多余按钮")
+
     if not node:
         print("  [--] 未找到 node，动态渲染校验已跳过（静态校验通过即放行）")
 

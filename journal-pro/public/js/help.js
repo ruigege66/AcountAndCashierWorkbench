@@ -144,9 +144,16 @@ function attachHelp(root) {
   nodes.forEach(el => {
     try {
       if (el.getAttribute && el.getAttribute('data-help')) return;
+      // 动态业务行（待办 / 搜索结果）不参与自动匹配，避免编号+摘要拼出的长文本乱配
+      if (el.closest && el.closest('[data-help-skip]')) return;
       const txt = (el.textContent || '').trim();
-      if (!txt || txt.length > 42) return;
-      const hit = HELP_RULES.find(r => r[0].test(txt));
+      if (!txt || txt.length > 14) return;
+      // 精确匹配：只有文本「恰好等于」指标名才挂说明。
+      // 之前用包含匹配，"待审核差旅费" 会命中「审批」规则，弹出职责分离说明——驴唇不对马嘴。
+      const hit = HELP_RULES.find(r => {
+        const src = r[0].source.replace(/^\^/, '').replace(/\$$/, '');
+        return new RegExp('^(?:' + src + ')$').test(txt);
+      });
       if (!hit) return;
       el.setAttribute('data-help', [hit[2], hit[3], ''].join(sep));
       el.classList.add('has-help');

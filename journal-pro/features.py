@@ -310,6 +310,13 @@ def voucher_seq_check(conn, m, body, qs):
         "unposted": unposted, "no_attachment": noattach}}
 
 
+# 业务代号统一转成中文可读描述；编号只作为次要信息保留，便于会计对账
+DOC_CN = {"payment": "付款申请", "receipt": "收款单", "advance": "备用金借款",
+          "reimbursement": "费用报销"}
+VSTATUS_CN = {"draft": "草稿", "submitted": "待审核", "approved": "已审核待过账",
+              "posted": "已过账", "void": "已作废"}
+
+
 # ---------------- 4. 全局搜索 ----------------
 @route("GET", r"/api/search")
 def global_search(conn, m, body, qs):
@@ -325,30 +332,40 @@ def global_search(conn, m, body, qs):
 
     add("docs", "业务单据", "docs", q(conn, """SELECT * FROM docs WHERE doc_no LIKE ? OR reason LIKE ?
         OR applicant LIKE ? OR dept LIKE ? ORDER BY doc_date DESC LIMIT 20""", (like, like, like, like)),
-        lambda r: {"id": r["id"], "title": r["doc_no"], "sub": f"{r['doc_type']} · {r['applicant'] or ''} · {r['reason'] or ''}",
+        lambda r: {"id": r["id"],
+                   "title": f"{DOC_CN.get(r['doc_type'], '业务单据')} · {r['applicant'] or '未填申请人'} · ¥{r['amount']:,.2f}",
+                   "sub": f"单据号 {r['doc_no']} · {r['reason'] or '无事由'}",
                    "date": r["doc_date"], "amount": r["amount"]})
     add("vouchers", "记账凭证", "vouchers", q(conn, """SELECT * FROM vouchers WHERE voucher_no LIKE ?
         OR summary LIKE ? ORDER BY voucher_date DESC LIMIT 20""", (like, like)),
-        lambda r: {"id": r["id"], "title": r["voucher_no"], "sub": f"{r['voucher_type']} · {r['summary'] or ''} · {r['status']}",
+        lambda r: {"id": r["id"],
+                   "title": f"{r['summary'] or '未填写摘要的凭证'}（{VSTATUS_CN.get(r['status'], '待处理')}）",
+                   "sub": f"凭证号 {r['voucher_no']} · {r['voucher_type']} 字",
                    "date": r["voucher_date"], "amount": None})
     add("invoices", "发票", "invoices", q(conn, """SELECT i.*,c.name cp FROM invoices i
         LEFT JOIN counterparties c ON c.id=i.counterparty_id
         WHERE i.invoice_no LIKE ? OR i.note LIKE ? OR c.name LIKE ? ORDER BY i.invoice_date DESC LIMIT 20""",
         (like, like, like)),
-        lambda r: {"id": r["id"], "title": r["invoice_no"], "sub": f"{r['kind']} · {r['cp'] or ''} · {r['status']}",
+        lambda r: {"id": r["id"],
+                   "title": f"{r['kind']}发票 · {r['cp'] or '未指定往来单位'} · ¥{r['total_amount']:,.2f}",
+                   "sub": f"发票号 {r['invoice_no']} · {r['status']}",
                    "date": r["invoice_date"], "amount": r["total_amount"]})
     add("journal", "日记账流水", "journal", q(conn, """SELECT * FROM journal WHERE summary LIKE ?
         ORDER BY journal_date DESC LIMIT 20""", (like,)),
-        lambda r: {"id": r["id"], "title": r["summary"] or f"流水 #{r['id']}",
-                   "sub": f"{r['account_kind']} · {r['direction']} · {r['recon_status']}",
+        lambda r: {"id": r["id"],
+                   "title": f"出纳流水：{r['summary'] or '未注明摘要'} · ¥{r['amount']:,.2f}",
+                   "sub": f"{'库存现金' if r['account_kind']=='cash' else '银行存款'} · {'收款' if r['direction']=='in' else '付款'} · {r['recon_status']}",
                    "date": r["journal_date"], "amount": r["amount"]})
     add("assets", "固定资产", "assets", q(conn, """SELECT * FROM assets WHERE asset_no LIKE ?
         OR name LIKE ? OR category LIKE ? ORDER BY purchase_date DESC LIMIT 20""", (like, like, like)),
-        lambda r: {"id": r["id"], "title": r["asset_no"], "sub": f"{r['name']} · {r['category']} · {r['status']}",
+        lambda r: {"id": r["id"],
+                   "title": f"{r['name']}（{r['category']} · {r['status']}）",
+                   "sub": f"资产编号 {r['asset_no']} · 原值 ¥{r['original_value']:,.2f}",
                    "date": r["purchase_date"], "amount": r["original_value"]})
     add("counterparties", "往来单位", "base", q(conn, """SELECT * FROM counterparties
         WHERE name LIKE ? ORDER BY id LIMIT 20""", (like,)),
-        lambda r: {"id": r["id"], "title": r["name"], "sub": f"{r['kind']} · 往来单位", "date": "", "amount": None})
+        lambda r: {"id": r["id"], "title": f"{r['name']}（{r['kind']} · 往来单位）",
+                   "sub": "在基础资料中维护", "date": "", "amount": None})
     return {"q": kw, "groups": [g for g in groups if g["count"]],
             "total": sum(g["count"] for g in groups)}
 
@@ -668,28 +685,36 @@ def todo_center(conn, m, body, qs):
 
     card("docs", "待审批单据", "docs",
          "SELECT id,doc_no,doc_type,amount,applicant,doc_date FROM docs WHERE status='submitted' ORDER BY doc_date",
-         (), lambda r: {"title": r["doc_no"], "sub": f"{r['doc_type']} · {r['applicant'] or ''} · ¥{r['amount']:,.2f}", "date": r["doc_date"]}, "warn")
+         (), lambda r: {"title": f"{DOC_CN.get(r['doc_type'], '业务单据')} · {r['applicant'] or '未填申请人'} · ¥{r['amount']:,.2f}",
+                        "sub": f"单据号 {r['doc_no']} · {r['doc_date']}", "date": r["doc_date"]}, "warn")
     card("vouchers", "未过账凭证", "vouchers",
-         "SELECT id,voucher_no,summary,voucher_date FROM vouchers WHERE status NOT IN ('posted','void') ORDER BY voucher_date",
-         (), lambda r: {"title": r["voucher_no"], "sub": r["summary"] or "待审核/待过账", "date": r["voucher_date"]}, "warn")
+         "SELECT id,voucher_no,summary,voucher_date,status FROM vouchers WHERE status NOT IN ('posted','void') ORDER BY voucher_date",
+         (), lambda r: {"title": f"{r['summary'] or '未填写摘要的凭证'}（{VSTATUS_CN.get(r['status'], '待处理')}）",
+                        "sub": f"凭证号 {r['voucher_no']} · {r['voucher_date']}", "date": r["voucher_date"]}, "warn")
     card("statements", "银行流水未匹配", "recon",
          "SELECT id,statement_date,description,amount_in,amount_out FROM bank_statements WHERE matched_journal_id IS NULL ORDER BY statement_date",
-         (), lambda r: {"title": r["description"] or f"对账单 #{r['id']}", "sub": f"收 ¥{r['amount_in']:,.2f} / 付 ¥{r['amount_out']:,.2f}", "date": r["statement_date"]})
+         (), lambda r: {"title": f"银行流水未匹配：{r['description'] or '未注明用途'}",
+                        "sub": f"收 ¥{r['amount_in']:,.2f} / 付 ¥{r['amount_out']:,.2f} · {r['statement_date']}", "date": r["statement_date"]})
     card("journal", "日记账未核对", "journal",
          "SELECT id,journal_date,summary,amount FROM journal WHERE recon_status='未核对' ORDER BY journal_date",
-         (), lambda r: {"title": r["summary"] or f"流水 #{r['id']}", "sub": f"¥{r['amount']:,.2f}", "date": r["journal_date"]})
+         (), lambda r: {"title": f"出纳流水待核对：{r['summary'] or '未注明摘要'}",
+                        "sub": f"¥{r['amount']:,.2f} · {r['journal_date']}", "date": r["journal_date"]})
     card("invoices", "发票未入账", "invoices",
          "SELECT id,invoice_no,kind,total_amount,invoice_date FROM invoices WHERE voucher_id IS NULL ORDER BY invoice_date",
-         (), lambda r: {"title": r["invoice_no"], "sub": f"{r['kind']} · ¥{r['total_amount']:,.2f}", "date": r["invoice_date"]}, "warn")
+         (), lambda r: {"title": f"{r['kind']}发票未入账 · ¥{r['total_amount']:,.2f}",
+                        "sub": f"发票号 {r['invoice_no']} · {r['invoice_date']}", "date": r["invoice_date"]}, "warn")
     card("invoices_clear", "发票待核销", "partner",
-         "SELECT id,invoice_no,total_amount,invoice_date,status FROM invoices WHERE status NOT LIKE '%核销%' ORDER BY invoice_date",
-         (), lambda r: {"title": r["invoice_no"], "sub": f"{r['status']} · ¥{r['total_amount']:,.2f}", "date": r["invoice_date"]})
+         "SELECT id,invoice_no,kind,total_amount,invoice_date,status FROM invoices WHERE status NOT LIKE '%核销%' ORDER BY invoice_date",
+         (), lambda r: {"title": f"{r['kind']}发票待核销 · ¥{r['total_amount']:,.2f}",
+                        "sub": f"发票号 {r['invoice_no']} · {r['status']}", "date": r["invoice_date"]})
     card("periods", "往期未结账", "periods",
          "SELECT period,status FROM periods WHERE status='open' AND period<? ORDER BY period",
-         (this,), lambda r: {"title": r["period"], "sub": "会计期间仍为开放状态", "date": ""}, "warn")
+         (this,), lambda r: {"title": f"{r['period'][:4]} 年 {int(r['period'][5:7])} 月会计期间未结账",
+                        "sub": f"期间 {r['period']} · 请在期末结账中处理", "date": ""}, "warn")
     card("assets", "在用固定资产", "assets",
          "SELECT id,asset_no,name,original_value,purchase_date FROM assets WHERE status='在用' ORDER BY purchase_date",
-         (), lambda r: {"title": f"{r['asset_no']} {r['name']}", "sub": f"原值 ¥{r['original_value']:,.2f} · 记得每月计提折旧", "date": r["purchase_date"]})
+         (), lambda r: {"title": f"{r['name']}（在用固定资产）",
+                        "sub": f"资产编号 {r['asset_no']} · 原值 ¥{r['original_value']:,.2f} · 记得每月计提折旧", "date": r["purchase_date"]})
     return {"items": cards, "total": sum(c["count"] for c in cards),
            "pending": sum(c["count"] for c in cards if c["level"] == "warn"),
            "generated_at": now()}

@@ -636,6 +636,11 @@ aside button.active::after{content:"";position:absolute;left:0;top:18%;bottom:18
 #crumb b{color:var(--text);font-weight:700}
 #crumb{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 
+/* ---------- 待办 / 搜索结果：整行点击 ---------- */
+.todo-row,.click-row{cursor:pointer;transition:background-color .18s}
+.todo-row:hover,.click-row:hover{background:var(--blue-bg)}
+.todo-go{color:var(--primary);font-weight:700;font-size:15px}
+
 /* ---------- 无障碍 / 打印 ---------- */
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;

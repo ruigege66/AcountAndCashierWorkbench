@@ -6,14 +6,16 @@ Object.assign(PAGES, {
   todo: async () => {
     const d = await api('/api/todo');
     return `<div class="page-head"><div><h2>我的待办中心</h2>
-      <div class="hint">8 类待办自动汇总，点「前往处理」直达对应模块 · 生成于 ${esc(d.generated_at)}</div></div>
+      <div class="hint">8 类待办自动汇总，点击任意一条即可直达对应模块 · 生成于 ${esc(d.generated_at)}</div></div>
       <button class="btn btn-g" onclick="render()">🔄 刷新</button></div>
       <div class="banner">共 <b>${d.total}</b> 项待办，其中需优先处理 <b>${d.pending}</b> 项</div>
       <div class="grid2">${d.items.map(c => `<div class="card"><h3>${esc(c.label)}
         <span class="tag ${c.count ? (c.level === 'warn' ? 't-rejected' : 't-posted') : 't-posted'}">${c.count ? c.count + ' 项' : '✓ 已清空'}</span></h3>
-        ${c.items.length ? c.items.map(i => `<div class="stat-line"><span>${esc(i.title)}</span>
-          <span class="muted">${esc(i.sub)}</span></div>`).join('') : '<div class="empty">暂无待办</div>'}
-        <button class="btn btn-g btn-sm" style="margin-top:10px" onclick="go('${c.page}')">前往处理 →</button></div>`).join('')}</div>`;
+        ${c.items.length ? c.items.map(i => `<div class="stat-line todo-row" data-help-skip
+            onclick="go('${c.page}')" title="点击前往「${esc(c.label)}」处理">
+          <span><b>${esc(i.title)}</b><div class="muted" style="font-size:11.5px;margin-top:2px">${esc(i.sub)}</div></span>
+          <span class="todo-go">→</span></div>`).join('') : '<div class="empty">暂无待办</div>'}
+        </div>`).join('')}</div>`;
   },
 
   search: async () => {
@@ -30,12 +32,11 @@ Object.assign(PAGES, {
           '<p class="muted" style="margin-top:8px">试试搜索「办公」「记-」「FP」等关键词</p>'}</div>
       ${d.groups.map(g => `<div class="card"><h3>${esc(g.label)} <span class="tag t-posted">${g.count}</span></h3>
         ${table(g.items, [
-          { t: '编号 / 名称', f: r => `<b>${esc(r.title)}</b>` },
-          { t: '说明', f: r => esc(r.sub) },
+          { t: '业务内容', f: r => `<b>${esc(r.title)}</b>` },
+          { t: '编号与说明', f: r => `<span class="muted">${esc(r.sub)}</span>` },
           { t: '日期', f: r => `<span class="muted">${esc(r.date || '—')}</span>` },
           { t: '金额', num: true, f: r => r.amount != null ? money(r.amount) : '—' },
-          { t: '', f: r => `<button class="btn btn-g btn-sm" onclick="go('${g.page}')">查看 →</button>` },
-        ])}</div>`).join('')}`;
+        ], '暂无结果', () => `class="click-row" onclick="go('${g.page}')" title="点击前往${esc(g.label)}"`)}</div>`).join('')}`;
   },
 
   tpl: async () => {

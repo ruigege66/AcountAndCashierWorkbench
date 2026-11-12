@@ -4,7 +4,7 @@ A self-hosted accounting + cashier system covering the full bookkeeping cycle:
 **business documents → approval → automatic vouchers → posting → journals → reconciliation → period close → financial statements → business analytics & forecasting**.
 Built with the **Python standard library + SQLite only — zero third-party dependencies**, with built-in internal controls (immutable ledger, audit hash chain, maker-checker segregation).
 
-> Version: V2.16 ｜ Front-end/back-end separated (vanilla JS SPA + REST API) ｜ Database: SQLite (WAL) ｜ Tests: 12 suites, 505 assertions + pre-commit + CI
+> Version: V2.16 ｜ Front-end/back-end separated (vanilla JS SPA + REST API) ｜ Database: SQLite (WAL) ｜ Tests: 12 suites, 511 assertions + pre-commit + CI
 > 中文文档：[README.md](README.md) ｜ [用户手册.md](journal-pro/docs/用户手册.md)
 
 ---
@@ -118,7 +118,13 @@ Click the round **☾ / ☀** button in the top-right corner to switch skins at 
 - **Role switcher** (top-right): a custom dropdown with an icon, title, description and selected state per role; switching updates both the sidebar tier and the audit-log operator. Closes on outside click or Escape.
 - **Storage panel** (top-right "Storage" button): on-demand view of database size, WAL size, schema version, row counts for 12 business tables, local backup count/time and audit-chain integrity. A successful connection is the normal state, so no connection banner is shown in the header. The old free-text "operator" field is now a hidden value derived from the role (write operations and segregation-of-duties checks still read it), so it cannot be mistyped.
 - Chart ticks and legend labels adapt to the theme automatically. Both skins were verified across all 65 pages — **the features and buttons are identical, only the appearance changes**.
-- `前端 11-11d` in the top-right corner is the front-end build tag. If the UI looks wrong or a button does nothing, press **Ctrl+F5** first; an older tag means the browser is serving a cached page.
+- `前端 11-11e` in the top-right corner is the front-end build tag. If the UI looks wrong or a button does nothing, press **Ctrl+F5** first; an older tag means the browser is serving a cached page.
+
+## Readability and one-click navigation
+
+- **No bare codes as headlines**: to-do cards (8 types) and global search (6 types) used to show raw IDs such as `DEMO-V-003`. They now lead with a Chinese business description, with the code kept as secondary grey text for reconciliation.
+- **No mismatched tooltips**: keyword *contains* matching made "待审核差旅费" trigger the segregation-of-duties explanation. Matching is now exact (whole label equals an indicator name) and dynamic business rows are excluded. Sidebar entries and page guide bars keep their explicit explanations.
+- **Click the whole row**: any to-do item or search result row opens its module directly; the extra "Go →" buttons were removed. Business tables with inline actions keep their buttons to avoid accidental navigation.
 
 ## Exports, attachments and navigation
 
@@ -141,7 +147,7 @@ The system scans rolling 12-month windows of booked operating revenue (posted, n
 
 ```bash
 cd journal-pro
-python run_tests.py             # run all 12 regression suites (505 assertions, ~15s)
+python run_tests.py             # run all 12 regression suites (511 assertions, ~15s)
 python run_tests.py core tax    # selected suites only
 run_tests.bat                   # Windows double-click
 ```
@@ -150,7 +156,7 @@ Quality gates so future changes cannot silently break behavior:
 
 1. **Pre-commit hook**: after `git config core.hooksPath .githooks`, every `git commit` runs the suites — **a failing regression blocks the commit** (verified; escape hatch: `--no-verify`);
 2. **CI**: `.github/workflows/ci.yml` runs all suites on every push / PR (Python 3.10 / 3.12 matrix);
-3. All 505 assertions run against throwaway ledgers. See [docs/TESTING.md](docs/TESTING.md).
+3. All 511 assertions run against throwaway ledgers. See [docs/TESTING.md](docs/TESTING.md).
 
 **Data safety & indexes** (migration 019): the first launch of each day writes a JSON snapshot (24 business tables) to `data/backups/` — atomic write, once per day, keeping the latest 7. No background thread or timer; a failure only prints one line and never blocks startup. The backup directory is gitignored. Two redundant indexes were also removed (a duplicate `journal_date` index and a single-column `vouchers(period)` index already covered by a composite one).
 

@@ -253,10 +253,10 @@ function chart(id, cfg) {
   applyChartTheme();
   const c = new Chart($(id), cfg); S.charts.push(c); return c;
 }
-function table(rows, cols, emptyText = '暂无数据') {
+function table(rows, cols, emptyText = '暂无数据', rowAttr = null) {
   if (!rows.length) return `<div class="empty">${emptyText}</div>`;
   return `<div class="scroll"><table><thead><tr>${cols.map(c => `<th class="${c.num ? 'num' : ''}">${c.t}</th>`).join('')}</tr></thead>
-    <tbody>${rows.map(r => `<tr>${cols.map(c => `<td class="${c.num ? 'num' : ''}">${c.f(r)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+    <tbody>${rows.map(r => `<tr${rowAttr ? ' ' + rowAttr(r) : ''}>${cols.map(c => `<td class="${c.num ? 'num' : ''}">${c.f(r)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
 }
 
 /* Office 导入导出快捷方法 */

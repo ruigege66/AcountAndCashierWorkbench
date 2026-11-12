@@ -799,6 +799,31 @@ def main():
     v2.close()
     check("  导出的 .db 是有效 SQLite 数据库", ntab >= 50)
 
+    # ---------- 23. 待办 / 搜索结果：代号不作主标题 ----------
+    print("\n--- 23. 全站代号可读性（待办 / 搜索） ---")
+    c = new_case("readable")
+    add_doc(c, typ="reimbursement", amount=1500.0, subject="6602")
+    add_voucher(c, PERIOD + "-08", "1002", "6001", 3390.0, post=False)
+    add_invoice(c, "FP-READ-1", "销项", 40000.0, 5200.0)
+    c.commit()
+    cards = F.todo_center(c, None, None, {})["items"]
+    items = [i for x in cards for i in x["items"]]
+    has_cn = lambda t: any("\u4e00" <= ch <= "\u9fff" for ch in (t or ""))
+    check("㉜ 待办主标题全部为中文业务描述", bool(items) and all(has_cn(i["title"]) for i in items),
+          f"{len(items)} 条")
+    import re as _re
+    check("  待办主标题没有纯代号",
+          not any(_re.fullmatch(r"[A-Za-z0-9\-]+", i["title"].strip()) for i in items))
+    vcard = next(x for x in cards if x["key"] == "vouchers")
+    check("  编号降级为次要信息（凭证号仍在）",
+          any("凭证号" in i["sub"] for i in vcard["items"]))
+    g = F.global_search(c, None, None, {"q": ["联动"]})["groups"]
+    gitems = [i for x in g for i in x["items"]]
+    check("  搜索结果主标题全部为中文业务描述",
+          bool(gitems) and all(has_cn(i["title"]) for i in gitems), f"{len(gitems)} 条")
+    check("  搜索结果编号仍在次要信息中",
+          all(any(k in i["sub"] for k in ("号", "编号")) for i in gitems))
+
     print(f"\n{'=' * 56}\n通过 {len(PASS)} 项，失败 {len(FAIL)} 项")
     return 0 if not FAIL else 1
 
