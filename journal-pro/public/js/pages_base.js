@@ -69,6 +69,9 @@ const PAGES = {
         { t: '申请人', f: r => esc(r.applicant || '—') },
         { t: '事由', f: r => `<span class="muted">${esc(r.reason || '—')}</span>` },
         { t: '状态', f: r => statusTag(r.status) },
+        { t: '电子报销单 / 附件', f: r => `<button class="btn btn-g btn-sm" onclick="attachDoc(${r.id})">📎 ${r.attachment_count ? '查看 (' + r.attachment_count + ')' : '上传'}</button>`
+            + (r.doc_type === 'reimbursement' && !r.attachment_count
+                ? '<div style="font-size:11px;color:var(--orange);margin-top:3px">⚠ 缺电子报销单</div>' : '') },
         { t: '凭证', f: r => esc(r.voucher_no || '—') },
         { t: '操作', f: r => {
             const b = (a, label, cls = 'btn-g') => `<button class="btn ${cls} btn-sm" onclick="actDoc(${r.id},'${a}')">${label}</button>`;
@@ -840,6 +843,16 @@ const PAGES = {
             <button class="btn btn-g" onclick="backupJSON()">⬇ 仅备份数据(JSON)</button>
             <label class="btn btn-g" style="margin:0">⬆ 恢复 / 迁移<input type="file" id="restoreFile" accept=".json" style="display:none" onchange="restoreJSON(this)"></label>
             <button class="btn btn-g" onclick="downloadCSV()">⬇ 导出日记账 CSV</button>
+          </div>
+          <div style="margin-top:10px;padding:10px;background:var(--blue-bg);border-radius:6px">
+            <b style="font-size:12.5px">导出为业界通用格式</b>
+            <span class="muted" style="font-size:12px">　Excel / WPS / Navicat / DB Browser 都能直接打开，不依赖本系统</span>
+            <div style="display:flex;gap:8px;margin-top:9px;flex-wrap:wrap">
+              <button class="btn btn-p btn-sm" onclick="downloadStandard('xlsx')">⬇ Excel 工作簿</button>
+              <button class="btn btn-g btn-sm" onclick="downloadStandard('csv')">⬇ CSV 压缩包</button>
+              <button class="btn btn-g btn-sm" onclick="downloadStandard('sql')">⬇ 标准 SQL 脚本</button>
+              <button class="btn btn-g btn-sm" onclick="downloadStandard('sqlite')">⬇ 数据库文件 (.db)</button>
+            </div>
           </div>
           <div style="margin-top:12px;padding:10px;background:var(--blue-bg);border-radius:6px;font-size:12.5px;line-height:1.7">
             <b>换电脑怎么用：</b>点「下载整站迁移包」，得到一个 zip，里面是程序 + 数据库 + 附件 + <b>Python 运行时</b> + 启动脚本。

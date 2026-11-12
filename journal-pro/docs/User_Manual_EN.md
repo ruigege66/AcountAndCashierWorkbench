@@ -158,13 +158,19 @@ Click the round **☾ / ☀** button in the top-right corner to switch skins. Yo
 
 - Open `http://127.0.0.1:8765/?theme=dark` to start in dark mode (handy for bookmarking or demos); the URL stays in sync after switching.
 - Chart ticks and legend labels adapt automatically, so figures stay legible in both skins. **All 65 pages and every button behave identically** — only the appearance changes, nothing to re-learn.
-- The `前端 11-11c` tag in the top-right corner is the front-end build version. If the UI looks wrong or a button does nothing, press **Ctrl+F5** first; an older tag means the browser is using a cached page.
+- The `前端 11-11d` tag in the top-right corner is the front-end build version. If the UI looks wrong or a button does nothing, press **Ctrl+F5** first; an older tag means the browser is using a cached page.
 - Printing automatically hides the sidebar, light blooms and buttons, leaving clean white content.
 
 ### 30.4.1 Two top-right controls
 
 - **Role switcher**: opens a card listing four roles (All functions / Cashier & AR-AP / General ledger & tax / CFO), each with a short description. Selecting one updates the sidebar tier and the audit-log operator. Click outside or press Escape to close.
 - **Storage**: shows the current database size, row counts for 12 business tables, schema version, local backup count and time, and audit-chain integrity. Data stays on this machine only. A successful database connection is the normal state, so no connection banner is displayed.
+
+### 30.4.2 Exports, claim attachments and going back
+
+- **Exporting data**: System Settings and the top-right Storage panel offer Excel workbook, CSV bundle, standard SQL script and a complete SQLite database file — all openable in Excel, WPS, Navicat or DB Browser.
+- **Electronic expense claims**: the Documents list flags reimbursement rows with no attachment. Open the attachment panel to upload, view or download files (Office, WPS, PDF, images, archives; max 20 MB each).
+- **Going back**: the header breadcrumb "Home › group › current feature" is clickable, and a "← Back" button follows your browsing history.
 
 ### 30.5 Understanding each feature: guide bars and hover tips
 

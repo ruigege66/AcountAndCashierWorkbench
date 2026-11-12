@@ -1,28 +1,45 @@
 /* 会计出纳系统 · 前端模块（由 public/app.js 按职责拆分，index.html 顺序加载） */
 /* ================= 交互动作 ================= */
 async function loadMeta() { S.meta = await api('/api/meta'); }
-function go(page) {
+/* ---------- 三级功能导航：面包屑 + 返回上一级 ---------- */
+function setCrumb(page) {
+  const el = $('crumb');
+  if (!el) return;
+  const name = (typeof NAV_LABEL === 'object' && NAV_LABEL[page]) || '工作台';
+  const g = (typeof navGroupOf === 'function') ? navGroupOf(page) : null;
+  const home = '<span class="crumb-link" onclick="go(\'dashboard\')">首页</span>';
+  const sep = '<span class="crumb-sep">›</span>';
+  if (page === 'dashboard' || !page) { el.innerHTML = '<b>工作台</b>'; return; }
+  if (g && g[1] !== page) {
+    el.innerHTML = home + sep + `<span class="crumb-link" onclick="go('${g[1]}')">${esc(g[0])}</span>`
+      + sep + `<b>${esc(name)}</b>`;
+  } else if (g) {
+    el.innerHTML = home + sep + `<b>${esc(g[0])} › ${esc(name)}</b>`;
+  } else {
+    el.innerHTML = home + sep + `<b>${esc(name)}</b>`;
+  }
+  const back = $('navBack');
+  if (back) back.style.display = (S.history && S.history.length) ? '' : 'none';
+}
+
+function goBack() {
+  const h = S.history || [];
+  const prev = h.length ? h.pop() : 'dashboard';
+  go(prev, true);
+}
+
+function go(page, fromBack) {
+  const prev = S.page;
+  if (!fromBack && prev && prev !== page) {
+    S.history = S.history || [];
+    S.history.push(prev);
+    if (S.history.length > 20) S.history.shift();
+  }
   S.page = page;
   try { if (location.hash.replace(/^#/, '') !== page) history.replaceState(null, '', '#' + page); } catch (e) { warn(e); }
   try { if (typeof highlightNav === 'function') highlightNav(page); else
     document.querySelectorAll('aside button').forEach(b => b.classList.toggle('active', b.dataset.page === page)); } catch (e) { warn(e); }
-  $('crumb').textContent = ({ dashboard: '工作台', docs: '业务单据', vouchers: '凭证管理', journal: '现金银行日记账',
-    daily: '日结核对', recon: '银行对账', periods: '期末结账', reports: '报表中心',
-    books: '账簿与分析', compliance: '内控合规', invoices: '发票管理', assets: '固定资产', office: '导入导出中心',
-    monitor: '监控大屏', risk: '风险预警', audit: '审计中心', help: '帮助中心',
-    partner: '往来账', fin: '财务报表',
-    todo: '我的待办中心', search: '全局搜索', tpl: '常用凭证模板', print: '凭证打印',
-    vcheck: '凭证合规体检', cfstmt: '现金流量表（正表）', ratios: '财务比率分析',
-    compare: '同比环比分析', baddebt: '坏账准备计提', collection: '往来催收清单',
-    snapshots: '报表快照归档', yearend: '年度结转', stmtimport: '对账单批量导入',
-    subjects: '会计科目模板',
-    analysis: '在线经营分析报告', rules: '分析规则配置', graph: '功能联动关系',
-    acct_tools: '会计工具箱', cashier_tools: '出纳工作台', tax_center: '税务中心', gateway_center: '开票 / 网银协同', legal_center: '法务管理', audit_center: '内部审计',
-    reg_center: '金融监管会计', macro_center: '宏观经济会计',
-    competency_center: '需求与四流追踪', advanced_center: '高阶核算与模型',
-    arch_audit: '架构审计中心', sec_center: '安全中心',
-    base: '基础资料', system: '系统管理', role_center: '岗位与能力进阶', work_1: '账务核算', work_2: '财务与预算', work_3: '合同法务', work_4: '集团与战略财务', work_5: '准则核算', work_6: '审计鉴证', work_7: '成本与估值', work_8: '商事合规', work_9: '全税种管理', work_10: '战略与风控', work_11: '重大项目综合',
-    graph_map: '知识图谱', seven_center: '七流分析', work_overview: '11 项工作总览' })[page] || '工作台';
+  setCrumb(page);
   render();
 }
 /* 历史遗留：工作台系列页面用 goPage('xxx')，早期模块用 go('xxx')。
@@ -96,6 +113,7 @@ async function render() {
     try { if (typeof attachHelp === 'function') attachHelp($('page')); } catch (_) { warn(_); }
     try { if (typeof refreshMotion === 'function') refreshMotion($('page')); } catch (_) { warn(_); }
     try { if (typeof highlightNav === 'function') highlightNav(S.page); } catch (_) { warn(_); }
+    try { setCrumb(S.page); } catch (_) { warn(_); }
   } catch (e) {
     $('page').innerHTML = `<div class="card"><h3>加载失败</h3><p class="muted">${esc(e.message)}</p></div>`;
   }
@@ -515,6 +533,54 @@ async function saveRisk() {
     }, actor: actor() });
     await loadMeta(); toast('✓ 阈值已保存，预警与大屏刷新已更新'); render();
   } catch (e) { toast('✗ ' + e.message, 4000); }
+}
+
+/* ---------- 单据附件（电子报销单） ---------- */
+const ATTACH_ACCEPT = '.doc,.docx,.xls,.xlsx,.ppt,.pptx,.pdf,.wps,.et,.dps,.wpt,' +
+  '.jpg,.jpeg,.png,.gif,.bmp,.webp,.tif,.tiff,.heic,.zip,.rar,.7z,.tar,.gz,.txt,.csv,.md';
+
+async function attachDoc(id) {
+  try {
+    const d = await api('/api/attachments?entity_type=doc&entity_id=' + id);
+    const rows = d.items.length ? d.items.map(a => `<div class="stat-line">
+      <span>📎 <b>${esc(a.filename)}</b> <span class="muted">${esc(a.file_type || '附件')} ·
+        ${((a.size || 0) / 1024).toFixed(1)} KB · ${esc(a.uploaded_by || '')} · ${esc(a.created_at || '')}</span></span>
+      <a class="btn btn-g btn-sm" href="/api/documents/${a.id}/download" target="_blank" rel="noopener">⬇ 下载 / 查看</a>
+      </div>`).join('') : '<div class="empty" style="color:var(--orange)">还没有电子报销单，请在下方补充上传后再审批</div>';
+    $('modal').innerHTML = `<div style="position:relative"><h3>电子报销单与附件</h3>
+        <button type="button" class="btn btn-g btn-sm" onclick="closeModal()"
+          style="position:absolute;right:0;top:-4px;padding:3px 10px">✕ 关闭</button></div>
+      <div class="card"><h3>已上传附件（${d.items.length} 个）</h3>${rows}</div>
+      <div class="card"><h3>补充上传</h3>
+        <div class="muted" style="margin-bottom:8px">支持 Word / Excel / PPT / PDF、WPS 文档（wps / et / dps / wpt）、
+          图片（jpg / png / gif / webp 等）、压缩包（zip / rar / 7z）与文本文件；单个文件不超过 ${d.max_mb || 20} MB，可一次选多个。</div>
+        <input type="file" id="docAttachFiles" multiple accept="${ATTACH_ACCEPT}">
+        <div style="margin-top:10px"><button class="btn btn-p" onclick="uploadDocAttachments(${id})">⬆ 上传并关联到本单据</button></div>
+      </div>`;
+    $('modalMask').classList.add('show');
+  } catch (e) { toast('✗ ' + e.message, 4000); }
+}
+
+async function uploadDocAttachments(id) {
+  const files = $('docAttachFiles') && $('docAttachFiles').files;
+  if (!files || !files.length) { toast('请先选择文件'); return; }
+  for (const f of files) {
+    try {
+      const buf = await f.arrayBuffer();
+      let binary = '';
+      const bytes = new Uint8Array(buf);
+      for (let i = 0; i < bytes.length; i += 8192) {
+        binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 8192));
+      }
+      await api('/api/documents/upload', 'POST', {
+        filename: f.name, content: btoa(binary), actor: actor(),
+        entity_type: 'doc', entity_id: id
+      });
+    } catch (e) { toast('✗ ' + f.name + '：' + e.message, 4500); return; }
+  }
+  closeModal();
+  toast('✓ 附件已上传到单据');
+  render();
 }
 
 /* ---------- 发票 / 预算 / 内控动作 ---------- */

@@ -126,6 +126,27 @@ def setting(conn, key, default=""):
     return r["value"] if r else default
 
 
+# 附件白名单：Office / WPS / PDF / 图片 / 压缩包 / 文本；可执行文件一律拒绝
+ALLOWED_ATTACH_EXT = {
+    "doc", "docx", "xls", "xlsx", "ppt", "pptx", "pdf",
+    "wps", "et", "dps", "wpt",
+    "jpg", "jpeg", "png", "gif", "bmp", "webp", "tif", "tiff", "heic",
+    "zip", "rar", "7z", "tar", "gz", "txt", "csv", "md",
+}
+ATTACH_MAX_BYTES = 20 * 1024 * 1024
+
+
+def check_attachment(filename, raw):
+    ext = os.path.splitext(filename or "")[1].lower().lstrip(".")
+    if ext not in ALLOWED_ATTACH_EXT:
+        raise ApiError(f"不支持的附件类型 .{ext or '未知'}；请使用 Office / WPS、PDF、图片、压缩包或文本文件")
+    if not raw:
+        raise ApiError("文件为空")
+    if len(raw) > ATTACH_MAX_BYTES:
+        raise ApiError("单个附件不能超过 20 MB")
+    return ext
+
+
 def doc_label(t):
     return {"payment": "付款申请", "receipt": "收款单", "advance": "备用金借款",
             "reimbursement": "费用报销"}.get(t, t)
@@ -278,7 +299,9 @@ def list_docs(conn, m, body, qs):
     status = (qs.get("status") or [""])[0]
     typ = (qs.get("type") or [""])[0]
     sql = """SELECT d.*, s.name AS subject_name, p.name AS project_name, c.name AS counterparty_name,
-                    v.voucher_no
+                    v.voucher_no,
+                    (SELECT COUNT(*) FROM attachments a WHERE a.entity_type='doc' AND a.entity_id=d.id)
+                      AS attachment_count
              FROM docs d LEFT JOIN subjects s ON s.code=d.subject_code
              LEFT JOIN projects p ON p.id=d.project_id
              LEFT JOIN counterparties c ON c.id=d.counterparty_id
@@ -883,6 +906,150 @@ def restore(conn, m, body, qs):
             for t in triggers:
                 conn.execute(t["sql"])
     return {"ok": True, "restored": sum(len(tables.get(t) or []) for t in TABLES)}
+
+
+# ---------------- 通用格式数据导出（业界标准，不绑定本系统） ----------------
+EXPORT_TABLE_LABELS = {
+    "subjects": "会计科目", "projects": "项目", "counterparties": "往来单位",
+    "bank_accounts": "银行账户", "periods": "会计期间", "openings": "资金期初",
+    "docs": "业务单据", "vouchers": "记账凭证", "voucher_lines": "凭证分录",
+    "journal": "出纳日记账", "bank_statements": "银行对账单", "daily_checks": "日结核对",
+    "audit_logs": "审计日志", "settings": "系统参数", "attachments": "文档附件",
+    "import_logs": "导入记录", "invoices": "进销项发票", "budgets": "预算",
+    "assets": "固定资产", "asset_depreciations": "折旧明细", "opening_balances": "期初余额",
+    "period_closings": "期末结账", "voucher_templates": "凭证模板", "report_snapshots": "报表快照",
+}
+COL_LABELS = {
+    "id": "编号", "code": "编码", "name": "名称", "period": "会计期间", "status": "状态",
+    "doc_no": "单据号", "doc_type": "单据类型", "doc_date": "单据日期", "amount": "金额",
+    "account_kind": "账户类型", "subject_code": "科目编码", "project_id": "项目", "counterparty_id": "往来单位",
+    "applicant": "申请人", "dept": "部门", "reason": "事由", "created_at": "创建时间",
+    "updated_at": "更新时间", "approved_by": "审批人", "voucher_id": "凭证编号",
+    "voucher_no": "凭证号", "voucher_date": "凭证日期", "voucher_type": "凭证字",
+    "summary": "摘要", "maker": "制单人", "posted_at": "过账时间", "line_no": "分录行号",
+    "debit": "借方", "credit": "贷方", "journal_date": "流水日期", "direction": "收付方向",
+    "balance_after": "记账后余额", "recon_status": "核对状态", "filename": "文件名",
+    "file_type": "文件类型", "size": "大小(字节)", "uploaded_by": "上传人",
+    "invoice_no": "发票号", "kind": "发票种类", "invoice_date": "开票日期",
+    "tax_amount": "税额", "total_amount": "价税合计", "original_value": "资产原值",
+    "salvage_rate": "残值率", "useful_life_months": "使用月数", "accumulated": "累计折旧",
+    "actor": "操作人", "action": "操作", "entity": "对象", "detail": "详情", "at": "时间",
+    "account_no": "银行账号", "address_phone": "地址电话", "advance_id": "关联借款单",
+    "amount_in": "流入金额", "amount_out": "流出金额", "asset_id": "资产编号(内码)",
+    "asset_no": "资产编号", "bank_account": "银行账户", "bank_account_id": "银行账户编号",
+    "bank_name": "开户行", "category": "类别", "check_date": "盘点日期",
+    "closed_at": "结账时间", "closed_by": "结账人", "counted_amount": "实盘金额",
+    "created_by": "创建人", "currency": "币种", "data_json": "数据内容",
+    "description": "说明", "doc_id": "单据编号", "enabled": "是否启用",
+    "entity_id": "关联对象编号", "entity_type": "关联对象类型", "error_count": "错误数",
+    "expense_subject": "折旧费用科目", "extracted_text": "提取的文本", "hash": "哈希",
+    "invoice_code": "发票代码", "invoice_title": "发票抬头", "is_bank": "是否银行科目",
+    "is_cash": "是否现金科目", "is_closing": "是否结转凭证", "key": "参数名",
+    "lines_json": "分录内容", "match_note": "匹配说明", "matched_journal_id": "匹配的流水编号",
+    "note": "备注", "opening_balance": "期初余额", "posted_by": "过账人",
+    "prev_hash": "前序哈希", "purchase_date": "购置日期", "reversal_of": "被冲销凭证",
+    "source_doc_id": "来源单据", "start_period": "开始计提期间",
+    "statement_date": "对账单日期", "stored_path": "存储文件名",
+    "success_count": "成功数", "target": "导入目标", "tax_id": "纳税人识别号",
+    "use_count": "使用次数", "value": "参数值", "voucher_line_id": "凭证明细编号",
+}
+
+
+def _export_headers(cols):
+    return [COL_LABELS.get(c, c) for c in cols]
+
+
+def _sql_literal(v):
+    if v is None:
+        return "NULL"
+    if isinstance(v, bool):
+        return "1" if v else "0"
+    if isinstance(v, (int, float)):
+        return str(v)
+    if isinstance(v, (bytes, bytearray)):
+        return "X'" + bytes(v).hex() + "'"
+    return "'" + str(v).replace("'", "''") + "'"
+
+
+@route("GET", r"/api/export/standard")
+def export_standard(conn, m, body, qs):
+    """导出为任何软件都能打开的通用格式：xlsx / csv(zip) / sql / sqlite。"""
+    fmt = (qs.get("format") or ["xlsx"])[0]
+    if fmt not in ("xlsx", "csv", "sql", "sqlite"):
+        raise ApiError("导出格式无效，可选：Excel、CSV、SQL、SQLite 数据库")
+    stamp = datetime.now().strftime("%Y-%m-%d")
+    tab = {t: q(conn, f"SELECT * FROM {t}") for t in TABLES}   # 表名来自内部白名单
+
+    if fmt == "sqlite":
+        import tempfile
+        tmpdir = tempfile.mkdtemp(prefix="journal-sqlite-")
+        snap = os.path.join(tmpdir, "journal.db")
+        conn.execute("VACUUM INTO ?", (snap,))
+        with open(snap, "rb") as f:
+            payload = f.read()
+        try:
+            os.remove(snap); os.rmdir(tmpdir)
+        except OSError:
+            pass
+        return {"_file": payload, "_filename": f"账套数据库_{stamp}.db",
+                "_ctype": "application/x-sqlite3"}
+
+    if fmt == "sql":
+        out = [f"-- journal-pro 账套数据导出 {stamp}",
+               "-- 标准 SQLite SQL 脚本，可用任何 SQLite 工具（DB Browser / Navicat / sqlite3）直接执行",
+               "PRAGMA foreign_keys = OFF;", "BEGIN TRANSACTION;"]
+        for t in TABLES:
+            ddl = one(conn, "SELECT sql FROM sqlite_master WHERE type='table' AND name=?", (t,))
+            if ddl and ddl["sql"]:
+                out.append(f"DROP TABLE IF EXISTS {t};")
+                out.append(ddl["sql"] + ";")
+            rows = tab[t]
+            if not rows:
+                continue
+            cols = list(rows[0].keys())
+            for r in rows:
+                out.append(f"INSERT INTO {t}({','.join(cols)}) VALUES({','.join(_sql_literal(r[c]) for c in cols)});")
+        out.append("COMMIT;")
+        out.append(f"-- 共 {len(TABLES)} 张表 / {sum(len(v) for v in tab.values())} 行")
+        return {"_file": "\n".join(out).encode("utf-8"),
+                "_filename": f"账套数据_{stamp}.sql", "_ctype": "text/sql; charset=utf-8"}
+
+    if fmt == "csv":
+        import zipfile as zf
+        buf = io.BytesIO()
+        with zf.ZipFile(buf, "w", zf.ZIP_DEFLATED) as z:
+            z.writestr("说明.txt",
+                       f"账套数据导出 {stamp}\nUTF-8 编码（带 BOM，Excel/WPS 直接打开不乱码）\n"
+                       + "\n".join(f"{EXPORT_TABLE_LABELS.get(t, t)} = {t}.csv" for t in TABLES))
+            for t in TABLES:
+                rows = tab[t]
+                cols = list(rows[0].keys()) if rows else []
+                lines = [",".join('"' + str(x).replace('"', '""') + '"'
+                                  for x in _export_headers(cols))]
+                for r in rows:
+                    lines.append(",".join('"' + str(r[c] if r[c] is not None else "").replace('"', '""') + '"'
+                                          for c in cols))
+                z.writestr(f"{EXPORT_TABLE_LABELS.get(t, t)}.csv",
+                           "\ufeff" + "\r\n".join(lines))
+        return {"_file": buf.getvalue(), "_filename": f"账套数据_CSV_{stamp}.zip",
+                "_ctype": "application/zip"}
+
+    # xlsx：一个工作簿，每表一个工作表，中文表名与中文列名
+    sheets = [{"name": "导出说明",
+               "headers": ["项目", "说明"],
+               "rows": [["账套数据导出", stamp],
+                        ["格式", "Excel 工作簿（.xlsx），Excel / WPS / LibreOffice 均可打开"],
+                        ["内容", "下列每个工作表对应账套中的一张数据表"],
+                        ["提示", "金额、日期均为系统原始值；如需报税请同时核对原始凭证"]]
+               + [[EXPORT_TABLE_LABELS.get(t, t), f"{len(tab[t])} 行"] for t in TABLES]}]
+    for t in TABLES:
+        rows = tab[t]
+        cols = list(rows[0].keys()) if rows else []
+        sheets.append({"name": EXPORT_TABLE_LABELS.get(t, t)[:31],
+                       "headers": _export_headers(cols),
+                       "rows": [[r[c] if r[c] is not None else "" for c in cols] for r in rows]})
+    return {"_file": make_xlsx(sheets), "_filename": f"账套数据_{stamp}.xlsx",
+            "_ctype": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}
 
 
 @route("GET", r"/api/export/journal\.csv")
@@ -3036,8 +3203,7 @@ def upload_document(conn, m, body, qs):
         raw = base64.b64decode(body.get("content") or "")
     except Exception:
         raise ApiError("文件内容解码失败")
-    if not raw:
-        raise ApiError("文件为空")
+    check_attachment(filename, raw)
     safe = re.sub(r"[^\w.\-]", "_", os.path.basename(filename))[:120]
     folder = os.path.join(BASE, "data", "attachments")
     os.makedirs(folder, exist_ok=True)
@@ -3052,6 +3218,23 @@ def upload_document(conn, m, body, qs):
                         body.get("entity_id")))
     log(conn, "登记文档", "attachment", cur.lastrowid, f"{filename}（{ftype}）", body.get("actor") or "系统")
     return {"ok": True, "id": cur.lastrowid, "file_type": ftype, "lines": lines[:30]}
+
+
+@route("GET", r"/api/attachments")
+def list_entity_attachments(conn, m, body, qs):
+    """按业务对象列出附件（单据审批页用），参数绑定防注入。"""
+    et = (qs.get("entity_type") or [""])[0]
+    eid = (qs.get("entity_id") or [""])[0]
+    sql = """SELECT id,filename,file_type,size,uploaded_by,created_at,entity_type,entity_id
+             FROM attachments WHERE 1=1"""
+    args = []
+    if et:
+        sql += " AND entity_type=?"; args.append(et)
+    if eid:
+        sql += " AND entity_id=?"; args.append(eid)
+    sql += " ORDER BY id DESC LIMIT 200"
+    return {"items": q(conn, sql, args), "allowed": sorted(ALLOWED_ATTACH_EXT),
+            "max_mb": ATTACH_MAX_BYTES // 1024 // 1024}
 
 
 @route("GET", r"/api/documents")

@@ -208,6 +208,23 @@ def main():
     check("  数据库容量查看完整（容量/记录数/备份/审计链）", storage_ok,
           "顶栏不再显示连接状态，改为按需查看")
 
+    # ⑬ 通用导出 / 报销单附件 / 三级功能导航
+    pbase = read(os.path.join(ROOT, "public", "js", "pages_base.js"))
+    feature_ok = all(x in srv for x in (
+        "def export_standard", "EXPORT_TABLE_LABELS", "ALLOWED_ATTACH_EXT",
+        "def check_attachment", "def list_entity_attachments", "attachment_count"))
+    feature_ok = feature_ok and all(x in core_js for x in (
+        "function downloadStandard", "'xlsx'", "'sqlite'"))
+    feature_ok = feature_ok and "缺电子报销单" in pbase and "downloadStandard(" in pbase
+    feature_ok = feature_ok and all(x in act_js for x in (
+        "function attachDoc", "function uploadDocAttachments",
+        "function setCrumb", "function goBack"))
+    feature_ok = feature_ok and ('id="navBack"' in html
+                                 and 'onclick="goBack()"' in html)
+    feature_ok = feature_ok and "function navGroupOf" in nav and ".crumb-link" in css
+    check("  通用导出 / 报销单附件 / 三级导航齐备", feature_ok,
+          "4 种通用格式 / 附件白名单 / 面包屑与返回")
+
     if not node:
         print("  [--] 未找到 node，动态渲染校验已跳过（静态校验通过即放行）")
 

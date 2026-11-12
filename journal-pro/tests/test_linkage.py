@@ -10,9 +10,13 @@
 
 运行：python tests/test_linkage.py
 """
+import base64
+import io
 import os
+import sqlite3
 import sys
 import tempfile
+import zipfile
 from datetime import date
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -739,6 +743,61 @@ def main():
     check("  合法单据与资产仍可正常录入", bool(ok_doc.get("id")) and ok_asset["ok"])
     check("  拒绝后账套仍平衡（无脏金额进入报表）",
           S.build_balance_sheet(c, PERIOD)["balanced"])
+
+    # ---------- 22. 通用格式导出 + 报销单附件跨功能联动 ----------
+    print("\n--- 22. 通用导出 / 报销单附件联动 ---")
+    c = new_case("export_attach")
+    did = add_doc(c, typ="reimbursement", amount=880.0, subject="6602")["id"]
+    S.doc_action(c, M(str(did), "submit"), {"actor": "张三"}, {})
+    c.commit()
+
+    # 附件白名单一：Office / WPS / 图片 / 压缩包放行，可执行文件与大文件拒绝
+    for fn in ("报销单.docx", "扫描件.png", "票据.wps", "资料.zip", "报销单.pdf"):
+        ok = True
+        try:
+            S.check_attachment(fn, b"test-data")
+        except Exception:
+            ok = False
+        check(f"  允许附件类型 {fn}", ok)
+    expect_error("  拒绝可执行文件", lambda: S.check_attachment("病毒.exe", b"MZ"), "不支持")
+    expect_error("  拒绝超过 20 MB", lambda: S.check_attachment("超大.pdf", b"x" * (21 * 1024 * 1024)), "20 MB")
+
+    payload = base64.b64encode(b"%PDF-1.4 electronic reimbursement form").decode()
+    up = S.upload_document(c, None, {"filename": "电子报销单.pdf", "content": payload,
+                                     "entity_type": "doc", "entity_id": did, "actor": "李四"}, {})
+    c.commit()
+    check("  上传电子报销单并关联到单据", up["ok"] and up["file_type"] == "PDF 文档")
+    att = S.list_entity_attachments(c, None, None, {"entity_type": ["doc"], "entity_id": [str(did)]})
+    check("  审批时可按单据查到附件", len(att["items"]) == 1
+          and att["items"][0]["filename"] == "电子报销单.pdf")
+    docs = S.list_docs(c, None, None, {})["items"]
+    row = next(x for x in docs if x["id"] == did)
+    check("  单据列表带附件数（缺件提醒的数据源）", row["attachment_count"] == 1)
+
+    # 四种业界通用格式：用通用库反向验证，而不是只看返回非空
+    from office import read_xlsx
+    x = S.export_standard(c, None, None, {"format": ["xlsx"]})
+    check("  Excel 工作簿可被通用解析器打开",
+          x["_filename"].endswith(".xlsx") and len(read_xlsx(x["_file"])) >= 20)
+    z = S.export_standard(c, None, None, {"format": ["csv"]})
+    znames = zipfile.ZipFile(io.BytesIO(z["_file"])).namelist()
+    first_csv = next(n for n in znames if n.endswith(".csv"))
+    bom = zipfile.ZipFile(io.BytesIO(z["_file"])).read(first_csv).startswith(b"\xef\xbb\xbf")
+    check("  CSV 压缩包带 BOM（Excel/WPS 不乱码）", len(znames) >= 20 and bom)
+    q = S.export_standard(c, None, None, {"format": ["sql"]})
+    sqltxt = q["_file"].decode("utf-8")
+    tmpdb = os.path.join(TMP, "sql_verify.db")
+    v = sqlite3.connect(tmpdb); v.executescript(sqltxt)
+    n = v.execute("SELECT COUNT(*) FROM docs").fetchone()[0]; v.close()
+    check("  SQL 脚本可被标准 sqlite3 直接执行", n == 1 and "INSERT INTO" in sqltxt)
+    dbfile = S.export_standard(c, None, None, {"format": ["sqlite"]})
+    p2 = os.path.join(TMP, "copy.db")
+    with open(p2, "wb") as f:
+        f.write(dbfile["_file"])
+    v2 = sqlite3.connect(p2)
+    ntab = v2.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table'").fetchone()[0]
+    v2.close()
+    check("  导出的 .db 是有效 SQLite 数据库", ntab >= 50)
 
     print(f"\n{'=' * 56}\n通过 {len(PASS)} 项，失败 {len(FAIL)} 项")
     return 0 if not FAIL else 1

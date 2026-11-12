@@ -409,4 +409,14 @@ def extract_office_text(filename, data):
             for row in sh["rows"][:200]:
                 lines.append(" | ".join(str(x) for x in row))
         return "Excel 工作簿", lines
-    return "文本", data.decode("utf-8", "ignore").splitlines()
+    if low.endswith(".pdf"):
+        return "PDF 文档", []
+    if low.endswith((".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".tif", ".tiff", ".heic")):
+        return "图片", []
+    if low.endswith((".zip", ".rar", ".7z", ".tar", ".gz")):
+        return "压缩包", []
+    if low.endswith((".doc", ".xls", ".ppt", ".wps", ".et", ".dps", ".wpt")):
+        return "Office / WPS 文档", []
+    if low.endswith((".txt", ".csv", ".md")):
+        return "文本文件", data.decode("utf-8", "ignore").splitlines()[:300]
+    return "附件", []

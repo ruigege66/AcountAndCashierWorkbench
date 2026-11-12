@@ -281,6 +281,36 @@ function currentPosition() { return localStorage.getItem('position') || 'all'; }
 /* 角色统一入口：右上角下拉与侧栏「岗位视角」按钮都走这里。
    一次切换同时完成三件事：① 记住视角 ② 同步审计日志操作人
    ③ 重画侧栏与当前页。避免两处各写一套导致显示与实际不一致。 */
+/* 侧栏 9 组分组：提到全局，供侧栏渲染与页面面包屑共用同一份数据 */
+const GROUPS_ALL = [
+    ['工作台 · 按业务办', '从「今天要办什么」进入，11 项工作按步骤引导办理',
+      ['dashboard','work_overview','todo','search','work_1','work_2','work_3','work_4','work_5','work_6','work_7','work_8','work_9','work_10','work_11']],
+    ['单据 · 凭证 · 账簿', '业务单据 → 凭证 → 日记账 → 账簿，含模板、打印与合规体检',
+      ['docs','invoices','vouchers','journal','books','subjects','tpl','print','vcheck','acct_tools','cashier_tools']],
+    ['资金 · 往来 · 期末', '日结核对、银行对账、期末与年度结转、资产与往来管理',
+      ['daily','recon','periods','yearend','snapshots','assets','baddebt','collection','partner']],
+    ['报表与经营分析', '三大报表、现金流量表、比率、同比环比与经营分析报告',
+      ['fin','cfstmt','reports','ratios','compare','analysis']],
+    ['税务管理', '全税种台账、认证抵扣、申报、税负率、个税与汇算清缴',
+      ['tax_center']],
+    ['数据分析与图谱', '功能联动、知识图谱、七流、能力进阶、高阶模型与规则配置',
+      ['graph','graph_map','seven_center','competency_center','role_center','advanced_center','rules','macro_center']],
+    ['法务 · 审计 · 监管', '合同法务、内部审计、金融监管会计三个专业域',
+      ['legal_center','audit_center','reg_center']],
+    ['外部协同', '开票 / 网银文件桥梁、对账单导入与整站导入导出',
+      ['gateway_center','stmtimport','office']],
+    ['系统与安全', '基础资料、参数、内控、预警、审计链、监控与帮助',
+      ['base','system','compliance','risk','audit','monitor','sec_center','arch_audit','help']],
+  ];
+
+function navGroupOf(page) {
+  for (const g of GROUPS_ALL) {
+    const pages = Array.isArray(g[2]) ? g[2] : [];
+    if (pages.indexOf(page) >= 0) return [g[0], pages[0]];
+  }
+  return null;
+}
+
 function applyRole(p) {
   const valid = ['all', 'business', 'manager', 'executive'];
   const role = valid.indexOf(p) >= 0 ? p : 'all';
@@ -301,30 +331,6 @@ function showAllFeatures() {
 
 function navTreeHtml() {
   const pos = currentPosition() || 'all';
-  // 全部功能模式：8 个大功能 → 全部小功能；岗位模式：只显示该档
-  // 按会计工作流顺序重排：今日要办 → 单据入账 → 资金期末 → 报表分析 → 税务
-  // → 数据图谱 → 专业域 → 外部协同 → 系统。每项都保留，只调整归类与顺序。
-  // 三元组 = [分组名, 这一组解决什么, 页面 id 列表]
-  const GROUPS_ALL = [
-    ['工作台 · 按业务办', '从「今天要办什么」进入，11 项工作按步骤引导办理',
-      ['dashboard','work_overview','todo','search','work_1','work_2','work_3','work_4','work_5','work_6','work_7','work_8','work_9','work_10','work_11']],
-    ['单据 · 凭证 · 账簿', '业务单据 → 凭证 → 日记账 → 账簿，含模板、打印与合规体检',
-      ['docs','invoices','vouchers','journal','books','subjects','tpl','print','vcheck','acct_tools','cashier_tools']],
-    ['资金 · 往来 · 期末', '日结核对、银行对账、期末与年度结转、资产与往来管理',
-      ['daily','recon','periods','yearend','snapshots','assets','baddebt','collection','partner']],
-    ['报表与经营分析', '三大报表、现金流量表、比率、同比环比与经营分析报告',
-      ['fin','cfstmt','reports','ratios','compare','analysis']],
-    ['税务管理', '全税种台账、认证抵扣、申报、税负率、个税与汇算清缴',
-      ['tax_center']],
-    ['数据分析与图谱', '功能联动、知识图谱、七流、能力进阶、高阶模型与规则配置',
-      ['graph','graph_map','seven_center','competency_center','role_center','advanced_center','rules','macro_center']],
-    ['法务 · 审计 · 监管', '合同法务、内部审计、金融监管会计三个专业域',
-      ['legal_center','audit_center','reg_center']],
-    ['外部协同', '开票 / 网银文件桥梁、对账单导入与整站导入导出',
-      ['gateway_center','stmtimport','office']],
-    ['系统与安全', '基础资料、参数、内控、预警、审计链、监控与帮助',
-      ['base','system','compliance','risk','audit','monitor','sec_center','arch_audit','help']],
-  ];
   const lv = NAV_LEVELS[pos];
   // 统一成 [标题, 页面数组, 分组说明]：GROUPS_ALL 是三元组、
   // NAV_LEVELS.*.groups 是 {title,pages} 对象数组。以前直接按二元组解构

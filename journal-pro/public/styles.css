@@ -625,12 +625,23 @@ aside button.active::after{content:"";position:absolute;left:0;top:18%;bottom:18
 .rm-foot b{color:var(--primary-dark)}
 @media(max-width:980px){.rt-text small,.storage-btn span:last-child{display:none}.rt-text{min-width:auto}}
 
+/* ---------- 三级功能导航 ---------- */
+.nav-back{height:28px;padding:0 10px;border:1px solid var(--border);border-radius:8px;
+  background:var(--card);color:var(--text2);font-size:11.5px;font-family:inherit;
+  cursor:pointer;white-space:nowrap;flex-shrink:0}
+.nav-back:hover{color:var(--primary);border-color:var(--primary)}
+.crumb-link{color:var(--primary-dark);cursor:pointer;white-space:nowrap}
+.crumb-link:hover{text-decoration:underline;color:var(--primary)}
+.crumb-sep{margin:0 7px;color:var(--text2)}
+#crumb b{color:var(--text);font-weight:700}
+#crumb{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+
 /* ---------- 无障碍 / 打印 ---------- */
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;
     transition-duration:.01ms!important;scroll-behavior:auto!important}}
 @media print{
-  aside,header,.toolbar,.btn,.modal-mask,.toast,.theme-toggle,.main::before,
+  aside,header,.toolbar,.btn,.modal-mask,.toast,.theme-toggle,.nav-back,.main::before,
   .help-tip,.page-help,.nav-hint,#motionLayers,.role-menu,.storage-btn{display:none!important}
   .content{padding:0}.card,.kpi{border:none;box-shadow:none;background:#fff;animation:none}
   body{background:#fff;color:#000}}

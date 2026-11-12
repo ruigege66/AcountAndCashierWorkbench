@@ -7,6 +7,7 @@ __pycache__/
 journal-pro/data/journal.db
 journal-pro/data/journal.db-*
 journal-pro/data/*.log
+journal-pro/data/attachments/
 journal-pro/data/backups/
 journal-pro/data/report_*.png
 # 验证截图与浏览器临时用户目录（本地临时，不入库）

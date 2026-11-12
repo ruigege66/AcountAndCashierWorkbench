@@ -18,6 +18,16 @@ function warn(e, tag) {
   try { console.warn('[journal-pro] ' + (tag || '操作未完成') + ':', (e && e.message) || e || ''); }
   catch (_) { return; }
 }
+/* ---------- 通用格式数据导出 ---------- */
+function downloadStandard(fmt) {
+  try {
+    const label = ({ xlsx: 'Excel 工作簿', csv: 'CSV 压缩包', sql: '标准 SQL 脚本',
+      sqlite: 'SQLite 数据库文件' })[fmt] || fmt;
+    toast('正在生成「' + label + '」…', 1800);
+    window.location.href = '/api/export/standard?format=' + encodeURIComponent(fmt);
+  } catch (e) { warn(e); }
+}
+
 /* ---------- 顶栏：工作角色切换（自定义下拉） ---------- */
 const ROLE_META = {
   all: { name: '全部功能', desc: '查看全部 65 项功能' },
@@ -114,6 +124,15 @@ async function openStorage() {
       <div class="card"><h3>各表记录数</h3><div class="scroll"><table>
         <thead><tr><th>数据表</th><th class="num">记录数</th><th>说明</th></tr></thead>
         <tbody>${rows}</tbody></table></div></div>
+      <div class="card"><h3>导出为通用格式</h3>
+        <div class="muted" style="margin-bottom:9px">以下格式 Excel、WPS、Navicat、DB Browser 等通用软件都能直接打开，不依赖本系统。</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button type="button" class="btn btn-p" onclick="downloadStandard('xlsx')">⬇ Excel 工作簿 (.xlsx)</button>
+          <button type="button" class="btn btn-g" onclick="downloadStandard('csv')">⬇ CSV 压缩包 (.zip)</button>
+          <button type="button" class="btn btn-g" onclick="downloadStandard('sql')">⬇ 标准 SQL 脚本 (.sql)</button>
+          <button type="button" class="btn btn-g" onclick="downloadStandard('sqlite')">⬇ 数据库文件 (.db)</button>
+        </div>
+        <div class="muted" style="margin-top:9px">Excel：24 张表各一个工作表，中文表名与列名；CSV：每表一个文件，UTF-8 带 BOM 不乱码；SQL：标准建表与插入语句；数据库文件：完整账套快照，任何 SQLite 工具可打开。</div></div>
       <div class="banner">${esc(d.note || '')}</div>
       <div class="actions"><button type="button" class="btn btn-g" onclick="closeModal()">关闭</button></div>`;
     $('modalMask').classList.add('show');
