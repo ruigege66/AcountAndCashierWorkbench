@@ -237,6 +237,15 @@ def main():
     check("  提示精确匹配 / 代号中文化 / 整行点击直达", readable_ok,
           "杜绝关键词误配与多余按钮")
 
+    # ⑮ 侧栏独立入口不能被误绑成 go(undefined)
+    bad_bind = "querySelectorAll('aside button').forEach(b => b.onclick" in act_js
+    safe_bind = (not bad_bind
+                 and "querySelectorAll('aside button[data-page]').forEach(b => b.onclick" in act_js
+                 and 'onclick="showAllFeatures()"' in html
+                 and 'function showAllFeatures' in nav)
+    check("  「全部功能」入口未被误绑（不会跳 #undefined）", safe_bind,
+          "侧栏按钮绑定必须限定 data-page")
+
     if not node:
         print("  [--] 未找到 node，动态渲染校验已跳过（静态校验通过即放行）")
 

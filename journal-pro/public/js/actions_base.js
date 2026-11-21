@@ -45,7 +45,10 @@ function go(page, fromBack) {
 /* 历史遗留：工作台系列页面用 goPage('xxx')，早期模块用 go('xxx')。
    两者统一指向同一入口，缺一个就会让整片「去办理 / 进入工作台」按钮失灵。 */
 function goPage(page) { return go(page); }
-document.querySelectorAll('aside button').forEach(b => b.onclick = () => go(b.dataset.page));
+// 只给「功能按钮」绑定跳转。带独立 onclick 的入口（☰ 全部功能、岗位视角等）
+// 不能被覆写成 go(undefined) —— 那会让 S.page 变成 undefined、地址栏出现 #undefined，
+// 页面随即报「加载失败：PAGES[S.page] is not a function」。
+document.querySelectorAll('aside button[data-page]').forEach(b => b.onclick = () => go(b.dataset.page));
 
 function safeChart(id, cfg) {
   try { chart(id, cfg); } catch (e) { console.warn('图表渲染失败（不影响数据展示）:', e.message); }
